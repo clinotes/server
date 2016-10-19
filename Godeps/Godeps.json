@@ -1,0 +1,87 @@
+{
+	"ImportPath": "github.com/clinotes/server",
+	"GoVersion": "go1.7",
+	"GodepVersion": "v74",
+	"Deps": [
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Comment": "v1.1-27-g757bef9",
+			"Rev": "757bef944d0f21880861c2dd9c871ca543023cba"
+		},
+		{
+			"ImportPath": "github.com/jackc/pgx",
+			"Comment": "v2.9.0-55-g3e77d0a",
+			"Rev": "3e77d0a1db3b3ddc7823331e51805669029c0990"
+		},
+		{
+			"ImportPath": "github.com/keighl/postmark",
+			"Rev": "6c4d0bbaf1b8ece6fcd3f05789bee84047e9eca7"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/bcrypt",
+			"Rev": "351dc6a5bf92a5f2ae22fadeee08eb6a45aa2d93"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/blowfish",
+			"Rev": "351dc6a5bf92a5f2ae22fadeee08eb6a45aa2d93"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/pbkdf2",
+			"Rev": "351dc6a5bf92a5f2ae22fadeee08eb6a45aa2d93"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/scrypt",
+			"Rev": "351dc6a5bf92a5f2ae22fadeee08eb6a45aa2d93"
+		},
+		{
+			"ImportPath": "gopkg.in/hlandau/easymetric.v1/cexp",
+			"Comment": "v1.0.0",
+			"Rev": "1c173222e345c2ba115e0f483821c6da2d3b0fa9"
+		},
+		{
+			"ImportPath": "gopkg.in/hlandau/measurable.v1",
+			"Comment": "v1.0.1",
+			"Rev": "d96a009bd9bda94dd1294105e67e8c1794e533d3"
+		},
+		{
+			"ImportPath": "gopkg.in/hlandau/passlib.v1",
+			"Comment": "v1.0.9",
+			"Rev": "933f1c3f63ffb0d17de04c3174f875ae683a33cd"
+		},
+		{
+			"ImportPath": "gopkg.in/hlandau/passlib.v1/abstract",
+			"Comment": "v1.0.9",
+			"Rev": "933f1c3f63ffb0d17de04c3174f875ae683a33cd"
+		},
+		{
+			"ImportPath": "gopkg.in/hlandau/passlib.v1/hash/bcrypt",
+			"Comment": "v1.0.9",
+			"Rev": "933f1c3f63ffb0d17de04c3174f875ae683a33cd"
+		},
+		{
+			"ImportPath": "gopkg.in/hlandau/passlib.v1/hash/bcryptsha256",
+			"Comment": "v1.0.9",
+			"Rev": "933f1c3f63ffb0d17de04c3174f875ae683a33cd"
+		},
+		{
+			"ImportPath": "gopkg.in/hlandau/passlib.v1/hash/scrypt",
+			"Comment": "v1.0.9",
+			"Rev": "933f1c3f63ffb0d17de04c3174f875ae683a33cd"
+		},
+		{
+			"ImportPath": "gopkg.in/hlandau/passlib.v1/hash/scrypt/raw",
+			"Comment": "v1.0.9",
+			"Rev": "933f1c3f63ffb0d17de04c3174f875ae683a33cd"
+		},
+		{
+			"ImportPath": "gopkg.in/hlandau/passlib.v1/hash/sha2crypt",
+			"Comment": "v1.0.9",
+			"Rev": "933f1c3f63ffb0d17de04c3174f875ae683a33cd"
+		},
+		{
+			"ImportPath": "gopkg.in/hlandau/passlib.v1/hash/sha2crypt/raw",
+			"Comment": "v1.0.9",
+			"Rev": "933f1c3f63ffb0d17de04c3174f875ae683a33cd"
+		}
+	]
+}
