@@ -18,6 +18,7 @@ var postmarkTemplateIDauthTokenCreate = 1010802
 var APIRouteCreateToken = Route{
 	"/auth/token/create",
 	func(res http.ResponseWriter, req *http.Request) {
+		// Parse JSON request
 		var data APIRequestStructCreateToken
 		if ensureJSONPayload(req, res, &data) != nil {
 			return
@@ -25,7 +26,12 @@ var APIRouteCreateToken = Route{
 
 		// Generate new random token
 		token := random(36)
-		hashed, _ := passlib.Hash(token)
+		hashed, err := passlib.Hash(token)
+
+		if err != nil {
+			writeJSONError(res, "Unable to create token")
+			return
+		}
 
 		// Lookup account ID
 		accountID, err := accountIDByAddress(data.Address)
@@ -37,7 +43,7 @@ var APIRouteCreateToken = Route{
 		// Save token to database
 		if _, err := pool.Exec("addToken", hashed, accountID); err == nil {
 			// Send confirmation mail using Postmark
-			pmark.SendTemplatedEmail(postmark.TemplatedEmail{
+			_, err := pmark.SendTemplatedEmail(postmark.TemplatedEmail{
 				TemplateId: int64(postmarkTemplateIDauthTokenCreate),
 				TemplateModel: map[string]interface{}{
 					"token": token,
@@ -46,6 +52,11 @@ var APIRouteCreateToken = Route{
 				To:      data.Address,
 				ReplyTo: "\"CLINotes\" <mail@clinot.es>",
 			})
+
+			if err != nil {
+				writeJSONError(res, "Unable to create token for account")
+				return
+			}
 
 			writeJSONResponse(res)
 			return

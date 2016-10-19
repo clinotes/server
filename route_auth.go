@@ -31,7 +31,14 @@ var APIRouterAuth = Route{
 		}
 
 		// Search account tokens for parameter
-		rows, _ := pool.Query("select token from token WHERE account = $1", accountID)
+		rows, err := pool.Query("select token from token WHERE account = $1", accountID)
+		defer rows.Close()
+
+		if err != nil {
+			writeJSONError(res, "Unable to load account details")
+			return
+		}
+
 		for rows.Next() {
 			values, err := rows.Values()
 			// Error with result

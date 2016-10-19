@@ -30,7 +30,7 @@ var APIRouteCreateUser = Route{
 		// Save account to database
 		if _, err := pool.Exec("addUser", data.Address, hashed); err == nil {
 			// Send confirmation mail using Postmark
-			pmark.SendTemplatedEmail(postmark.TemplatedEmail{
+			_, err := pmark.SendTemplatedEmail(postmark.TemplatedEmail{
 				TemplateId: int64(postmarkTemplateIDauthUserCreate),
 				TemplateModel: map[string]interface{}{
 					"token": verify,
@@ -39,6 +39,11 @@ var APIRouteCreateUser = Route{
 				To:      data.Address,
 				ReplyTo: "\"CLINotes\" <mail@clinot.es>",
 			})
+
+			if err != nil {
+				writeJSONError(res, "Unable to create account")
+				return
+			}
 
 			writeJSONResponse(res)
 			return

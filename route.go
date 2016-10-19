@@ -13,7 +13,7 @@ type Route struct {
 }
 
 func writeJSONResponse(res http.ResponseWriter) {
-	res.Write([]byte(`{"error": false}`))
+	res.Write([]byte(`{"error": false, "done": true}`))
 }
 
 func writeJSONError(res http.ResponseWriter, text string) error {

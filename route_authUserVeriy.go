@@ -35,13 +35,13 @@ var APIRouterVerifyUser = Route{
 		// Verify token
 		_, err = passlib.Verify(data.Token, hash)
 		if err != nil {
-			writeJSONError(res, "Unknown account address")
+			writeJSONError(res, "Invalid verification token")
 			return
 		}
 
 		if _, err = pool.Exec("verifyUser", data.Address); err == nil {
 			// Send confirmation mail using Postmark
-			pmark.SendTemplatedEmail(postmark.TemplatedEmail{
+			_, err := pmark.SendTemplatedEmail(postmark.TemplatedEmail{
 				TemplateId: int64(postmarkTemplateIDauthUserVerify),
 				From:       "mail@clinot.es",
 				To:         data.Address,
@@ -50,6 +50,11 @@ var APIRouterVerifyUser = Route{
 				},
 				ReplyTo: "\"CLINotes\" <mail@clinot.es>",
 			})
+
+			if err != nil {
+				writeJSONError(res, "Unable to verify account")
+				return
+			}
 
 			writeJSONResponse(res)
 			return
