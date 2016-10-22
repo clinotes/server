@@ -1,9 +1,17 @@
-package main
+package route
 
 import (
 	"encoding/json"
 	"errors"
 	"net/http"
+
+	"github.com/jackc/pgx"
+	"github.com/keighl/postmark"
+)
+
+var (
+	pool  *pgx.ConnPool
+	pmark *postmark.Client
 )
 
 // Route is a route
@@ -42,6 +50,20 @@ func accountIDByAddress(address string) (int, error) {
 	}
 
 	return accountID, nil
+}
+
+// List returns available routes
+func List(p *pgx.ConnPool, pm *postmark.Client) []Route {
+	pool = p
+	pmark = pm
+
+	return []Route{
+		APIRouterAdd,
+		APIRouterAuth,
+		APIRouteCreateToken,
+		APIRouteCreateUser,
+		APIRouterVerifyUser,
+	}
 }
 
 func ensureJSONPayload(req *http.Request, res http.ResponseWriter, data interface{}) error {

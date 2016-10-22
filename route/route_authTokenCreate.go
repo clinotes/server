@@ -1,8 +1,9 @@
-package main
+package route
 
 import (
 	"net/http"
 
+	"github.com/clinotes/server/random"
 	"github.com/keighl/postmark"
 	"gopkg.in/hlandau/passlib.v1"
 )
@@ -25,7 +26,7 @@ var APIRouteCreateToken = Route{
 		}
 
 		// Generate new random token
-		token := random(36)
+		token := random.Get(36)
 		hashed, err := passlib.Hash(token)
 
 		if err != nil {

@@ -1,8 +1,9 @@
-package main
+package route
 
 import (
 	"net/http"
 
+	"github.com/clinotes/server/random"
 	"github.com/keighl/postmark"
 	"gopkg.in/hlandau/passlib.v1"
 )
@@ -24,7 +25,7 @@ var APIRouteCreateUser = Route{
 		}
 
 		// Create token for user verification
-		verify := random(36)
+		verify := random.Get(36)
 		hashed, _ := passlib.Hash(verify)
 
 		// Save account to database
