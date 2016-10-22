@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/clinotes/server/setup"
 	"github.com/jackc/pgx"
 )
 
@@ -38,6 +39,8 @@ var queries = map[string]string{
 }
 
 func registerQueries(conn *pgx.Conn) error {
+	setup.Run(conn)
+
 	for name, query := range queries {
 		_, err := conn.Prepare(name, query)
 
