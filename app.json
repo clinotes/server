@@ -2,6 +2,7 @@
   "name": "server",
   "description": "Testing Review Apps",
   "scripts": {
+    "postdeploy": "go run scripts/database-create.go"
   },
   "env": {
     "MAX_DB_CONNECTIONS": {
