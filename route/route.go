@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/jackc/pgx"
 	"github.com/keighl/postmark"
@@ -24,6 +25,11 @@ func writeJSONResponse(res http.ResponseWriter) {
 	res.Write([]byte(`{"error": false, "done": true}`))
 }
 
+func writeJSONResponseData(res http.ResponseWriter, data interface{}) {
+	slcB, _ := json.Marshal(APIResponseData{data, false})
+	res.Write([]byte(string(slcB)))
+}
+
 func writeJSONError(res http.ResponseWriter, text string) error {
 	res.WriteHeader(http.StatusBadRequest)
 	res.Write([]byte(`{"error", true, "text": "` + text + `"}`))
@@ -39,6 +45,65 @@ func tokenByUnverifiedAddress(address string) (string, error) {
 		return "", errors.New("Failed to retrieve verification token")
 	}
 	return token, nil
+}
+
+// APIResponseData is
+type APIResponseData struct {
+	Data  interface{}
+	Error bool `json:"error"`
+}
+
+// APIResponseDataMe is
+type APIResponseDataMe struct {
+	Address      string
+	Created      time.Time
+	Notes        int
+	Token        int
+	Subscription bool
+}
+
+func accountByID(accountID int) (*APIResponseDataMe, error) {
+	var accountAddress string
+	var accountCreated time.Time
+
+	err := pool.QueryRow("getAccount", accountID).Scan(&accountAddress, &accountCreated)
+	if err != nil {
+		return nil, err
+	}
+
+	numberToken, err := countTokenByAccountID(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	numberNotes, err := countNotesByAccountID(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &APIResponseDataMe{accountAddress, accountCreated, numberNotes, numberToken, false}, nil
+}
+
+func countNotesByAccountID(accountID int) (int, error) {
+	var count int
+
+	err := pool.QueryRow("countNotes", accountID).Scan(&count)
+	if err != nil {
+		return 0, errors.New("Failed to count notes for account ID")
+	}
+
+	return count, nil
+}
+
+func countTokenByAccountID(accountID int) (int, error) {
+	var count int
+
+	err := pool.QueryRow("countToken", accountID).Scan(&count)
+	if err != nil {
+		return 0, errors.New("Failed to count token for account ID")
+	}
+
+	return count, nil
 }
 
 func accountIDByAddress(address string) (int, error) {
@@ -58,6 +123,7 @@ func List(p *pgx.ConnPool, pm *postmark.Client) []Route {
 	pmark = pm
 
 	return []Route{
+		APIRouterMe,
 		APIRouterAdd,
 		APIRouterAuth,
 		APIRouteCreateToken,
