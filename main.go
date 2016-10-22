@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/clinotes/server/route"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx"
 	"github.com/keighl/postmark"
@@ -57,16 +58,12 @@ func init() {
 	api := router.PathPrefix("/").Subrouter()
 
 	// Configure path handlers
-	api.HandleFunc(APIRouteCreateToken.URL, APIRouteCreateToken.Handler).Methods("POST")
-	api.HandleFunc(APIRouteCreateUser.URL, APIRouteCreateUser.Handler).Methods("POST")
-	api.HandleFunc(APIRouterAuth.URL, APIRouterAuth.Handler).Methods("POST")
-	api.HandleFunc(APIRouterVerifyUser.URL, APIRouterVerifyUser.Handler).Methods("POST")
+	for _, r := range route.List(pool, pmark) {
+		api.HandleFunc(r.URL, r.Handler).Methods("POST")
+	}
 }
 
 func main() {
-	// Listen on PORT only on non-local environment
-	fmt.Printf("Started CLInotes API endpoint on port %s\n", httpPort)
-
 	// Check if running on local environment and set hostname to avoid
 	// annoying MacOS security warnings.
 	if os.Getenv("ENV") == "local" {
@@ -77,5 +74,7 @@ func main() {
 		httpPort = os.Getenv("PORT")
 	}
 
+	// Listen on PORT only on non-local environment
+	fmt.Printf("Started CLInotes API endpoint on port %s\n", httpPort)
 	http.ListenAndServe(httpHostname+":"+httpPort, router)
 }
