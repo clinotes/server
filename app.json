@@ -1,0 +1,27 @@
+{
+  "name": "server",
+  "description": "Testing Review Apps",
+  "scripts": {
+  },
+  "env": {
+    "MAX_DB_CONNECTIONS": {
+      "required": true
+    },
+    "POSTMARK_API_KEY": {
+      "required": true
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1
+    }
+  },
+  "addons": [
+    "heroku-postgresql"
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/go"
+    }
+  ]
+}
