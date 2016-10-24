@@ -65,8 +65,9 @@ type APIResponseDataMe struct {
 func accountByID(accountID int) (*APIResponseDataMe, error) {
 	var accountAddress string
 	var accountCreated time.Time
+	var accountPaid bool
 
-	err := pool.QueryRow("getAccount", accountID).Scan(&accountAddress, &accountCreated)
+	err := pool.QueryRow("getAccount", accountID).Scan(&accountAddress, &accountCreated, &accountPaid)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +82,7 @@ func accountByID(accountID int) (*APIResponseDataMe, error) {
 		return nil, err
 	}
 
-	return &APIResponseDataMe{accountAddress, accountCreated, numberNotes, numberToken, false}, nil
+	return &APIResponseDataMe{accountAddress, accountCreated, numberNotes, numberToken, accountPaid}, nil
 }
 
 func countNotesByAccountID(accountID int) (int, error) {
@@ -129,6 +130,7 @@ func List(p *pgx.ConnPool, pm *postmark.Client) []Route {
 		APIRouteCreateToken,
 		APIRouteCreateUser,
 		APIRouterVerifyUser,
+		APIRouterSubscribe,
 	}
 }
 

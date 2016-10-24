@@ -47,10 +47,12 @@ func createAccount(pool *pgx.Conn) {
 	// Search account tokens for parameter
 	rows, err := pool.Query(`CREATE TABLE account (
     id serial primary key,
-    address varchar(100) unique NOT NULL,
+    address character varying(100) unique NOT NULL,
     verified boolean DEFAULT false NOT NULL,
     created timestamp DEFAULT current_timestamp NOT NULL,
-    token character varying(100)
+    token character varying(100),
+		paid boolean DEFAULT false NOT NULL,
+		subscription character varying(100) unique NULL
   );`)
 	defer rows.Close()
 

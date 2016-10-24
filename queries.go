@@ -26,10 +26,15 @@ var queries = map[string]string{
     select id from account where address=$1 AND verified = TRUE
 	`,
 	"getAccount": `
-		select address, created from account where id=$1
+		select address, created, paid from account where id=$1
 	`,
 	"getUnverifiedUser": `
     select token from account where address=$1 AND verified = FALSE
+	`,
+	"setSubscription": `
+    update account
+		set paid = TRUE, subscription = $2
+		WHERE id = $1
 	`,
 	"verifyUser": `
     update account
