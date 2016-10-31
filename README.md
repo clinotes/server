@@ -23,6 +23,6 @@ Feel free to use the server code, it's released using the [GPLv3 license](https:
 - [Postmark](https://postmarkapp.com) (send emails)
 - [Stripe](https://stripe.com) (handle subscriptions)
 
-### Install
+## Install
 
 There will be an easy guide to install the server someday …
