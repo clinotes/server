@@ -4,11 +4,6 @@
 	"GodepVersion": "v74",
 	"Deps": [
 		{
-			"ImportPath": "github.com/gorilla/handlers",
-			"Comment": "v1.1-11-ga577578",
-			"Rev": "a5775781a543af3c6b9f5baf10995e4d14168950"
-		},
-		{
 			"ImportPath": "github.com/gorilla/mux",
 			"Comment": "v1.1-27-g757bef9",
 			"Rev": "757bef944d0f21880861c2dd9c871ca543023cba"
@@ -21,6 +16,31 @@
 		{
 			"ImportPath": "github.com/keighl/postmark",
 			"Rev": "6c4d0bbaf1b8ece6fcd3f05789bee84047e9eca7"
+		},
+		{
+			"ImportPath": "github.com/stripe/stripe-go",
+			"Comment": "v18.7.0",
+			"Rev": "80f843e54ca520ed9fffbc11251e56f6beff7c1d"
+		},
+		{
+			"ImportPath": "github.com/stripe/stripe-go/customer",
+			"Comment": "v18.7.0",
+			"Rev": "80f843e54ca520ed9fffbc11251e56f6beff7c1d"
+		},
+		{
+			"ImportPath": "github.com/stripe/stripe-go/orderitem",
+			"Comment": "v18.7.0",
+			"Rev": "80f843e54ca520ed9fffbc11251e56f6beff7c1d"
+		},
+		{
+			"ImportPath": "github.com/stripe/stripe-go/sub",
+			"Comment": "v18.7.0",
+			"Rev": "80f843e54ca520ed9fffbc11251e56f6beff7c1d"
+		},
+		{
+			"ImportPath": "github.com/stripe/stripe-go/token",
+			"Comment": "v18.7.0",
+			"Rev": "80f843e54ca520ed9fffbc11251e56f6beff7c1d"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/bcrypt",
