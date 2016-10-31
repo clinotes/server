@@ -1,63 +1,42 @@
 package setup
 
-import (
-	"fmt"
-
-	"github.com/jackc/pgx"
-)
+import "github.com/jackc/pgx"
 
 // Run creates the database structure if needed
 func Run(pool *pgx.Conn) {
-	createAccount(pool)
-	createToken(pool)
-	createNote(pool)
-}
+	pool.Exec(`
+		CREATE TABLE account(
+	    id serial primary key,
+	    address TEXT NOT NULL,
+	    created TIMESTAMP DEFAULT now() NOT NULL,
+	    verified BOOLEAN DEFAULT false NOT NULL
+		);
 
-func createNote(pool *pgx.Conn) {
-	// Search account tokens for parameter
-	rows, err := pool.Query(`CREATE TABLE note (
-		account integer NOT NULL,
-		text character varying(250) unique NOT NULL,
-		created timestamp DEFAULT current_timestamp NOT NULL
-  );`)
-	defer rows.Close()
+		CREATE TABLE subscription(
+	    id serial primary key,
+	    account INTEGER NOT NULL,
+	    created TIMESTAMP DEFAULT now() NOT NULL,
+	    stripeid TEXT NOT NULL,
+	    active BOOLEAN DEFAULT false
+		);
 
-	if err != nil {
-		fmt.Println("Error select", err)
-		return
-	}
-}
+		CREATE TABLE token(
+	    id serial primary key,
+	    account INTEGER NOT NULL,
+	    text TEXT NOT NULL,
+	    created TIMESTAMP DEFAULT now() NOT NULL,
+	    type INTEGER DEFAULT 1 NOT NULL,
+	    active BOOLEAN DEFAULT true
+		);
 
-func createToken(pool *pgx.Conn) {
-	// Search account tokens for parameter
-	rows, err := pool.Query(`CREATE TABLE token (
-		account integer NOT NULL,
-		token character varying(100) unique NOT NULL,
-		created timestamp DEFAULT current_timestamp NOT NULL
-  );`)
-	defer rows.Close()
+		CREATE UNIQUE INDEX account_id_uindex ON account (id);
+		CREATE UNIQUE INDEX account_address_uindex ON account (address);
 
-	if err != nil {
-		fmt.Println("Error select", err)
-		return
-	}
-}
+		ALTER TABLE subscription ADD FOREIGN KEY (account) REFERENCES account (id) on delete cascade;
+		CREATE UNIQUE INDEX subscription_id_uindex ON subscription (id);
+		CREATE UNIQUE INDEX "subscription_stripeID_uindex" ON subscription (stripeid);
 
-func createAccount(pool *pgx.Conn) {
-	// Search account tokens for parameter
-	rows, err := pool.Query(`CREATE TABLE account (
-    id serial primary key,
-    address character varying(100) unique NOT NULL,
-    verified boolean DEFAULT false NOT NULL,
-    created timestamp DEFAULT current_timestamp NOT NULL,
-    token character varying(100),
-		paid boolean DEFAULT false NOT NULL,
-		subscription character varying(100) unique NULL
-  );`)
-	defer rows.Close()
-
-	if err != nil {
-		fmt.Println("Error select", err)
-		return
-	}
+		ALTER TABLE token ADD FOREIGN KEY (account) REFERENCES account (id) on delete cascade;
+		CREATE UNIQUE INDEX token_id_uindex ON token (id);
+	`)
 }
