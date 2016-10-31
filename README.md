@@ -1,4 +1,4 @@
-# CLINotes server
+# clinot.es server [![CircleCI](https://circleci.com/gh/clinotes/server.svg?style=svg)](https://circleci.com/gh/clinotes/server)
 
 The service at [clinot.es](https://clinot.es) is a remove note service with a [CLI client](https://github.com/clinotes/client). Use the hosted service or feel to host it by yourself, it works fine with Heroku.
 

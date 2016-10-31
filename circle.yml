@@ -1,0 +1,6 @@
+machine:
+  services:
+    - postgresql
+test:
+  override:
+    - make test
