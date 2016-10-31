@@ -8,6 +8,11 @@ The service at [clinot.es](https://clinot.es) is a remote note management servic
 
 Feel free to use the server code, it's released using the [GPLv3 license](https://github.com/clinotes/server/blob/master/LICENSE.md).
 
+
+## Contributors
+
+- [Sebastian Müller](https://sbstjn.com)
+
 ## Features
 
 - [x] Create account
