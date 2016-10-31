@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/clinotes/server/data"
 	"github.com/clinotes/server/route"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx"
@@ -50,6 +51,9 @@ func init() {
 		os.Exit(1)
 	}
 
+	// Configure data to use current db pool
+	data.Pool(pool)
+
 	// Create Postmark API client
 	pmark = postmark.NewClient(os.Getenv("POSTMARK_API_KEY"), "")
 
@@ -58,9 +62,18 @@ func init() {
 	api := router.PathPrefix("/").Subrouter()
 
 	// Configure path handlers
-	for _, r := range route.List(pool, pmark) {
+	for _, r := range route.Routes(pool, pmark) {
 		api.HandleFunc(r.URL, r.Handler).Methods("POST")
 	}
+
+	api.HandleFunc(
+		"/version",
+		func(res http.ResponseWriter, req *http.Request) {
+			// Set JSON response header
+			res.Header().Set("Content-Type", "application/json; charset=utf-8")
+			res.Write([]byte(`{"version":"0.0.5","client":"0.1.0"}`))
+		},
+	)
 }
 
 func main() {

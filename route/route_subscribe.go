@@ -6,48 +6,59 @@ import (
 	"os"
 	"strings"
 
+	"github.com/clinotes/server/data"
 	stripe "github.com/stripe/stripe-go"
-	"github.com/stripe/stripe-go/customer"
-	"github.com/stripe/stripe-go/sub"
-	"github.com/stripe/stripe-go/token"
+	stripeCustomer "github.com/stripe/stripe-go/customer"
+	stripeSub "github.com/stripe/stripe-go/sub"
+	stripeToken "github.com/stripe/stripe-go/token"
 )
 
 // APIRequestStructSubscribe is
 type APIRequestStructSubscribe struct {
 	Address string `json:"address"`
 	Token   string `json:"token"`
-	Numer   string `json:"number"`
+	Number  string `json:"number"`
 	Expire  string `json:"expire"`
 	CVC     string `json:"cvc"`
 }
 
-// APIRouterSubscribe is
-var APIRouterSubscribe = Route{
+// APIRouteSubscribe is
+var APIRouteSubscribe = Route{
 	"/subscribe",
 	func(res http.ResponseWriter, req *http.Request) {
 		// Parse JSON request
-		var data APIRequestStructSubscribe
-		if ensureJSONPayload(req, res, &data) != nil {
+		var reqData APIRequestStructSubscribe
+		if ensureJSONPayload(req, res, &reqData) != nil {
 			return
 		}
 
-		// Lookup account ID
-		fmt.Println(data)
-		accountID, err := accountIDByAddress(data.Address)
+		// Get account
+		account, err := data.AccountByAddress(reqData.Address)
 		if err != nil {
-			fmt.Println("error account id")
 			writeJSONError(res, "Unknown account address")
 			return
 		}
 
+		if !account.IsVerified() {
+			writeJSONError(res, "Account not verified")
+			return
+		}
+
+		// Check if account has requested token
+		_, err = account.GetToken(reqData.Token, data.TokenTypeAccess)
+		if err != nil {
+			writeJSONError(res, "Unable to use provided token")
+			return
+		}
+
 		stripe.Key = os.Getenv("STRIPE_API_KEY")
-		expire := strings.Split(data.Expire, "/")
-		t, err := token.New(&stripe.TokenParams{
+		expire := strings.Split(reqData.Expire, "/")
+		t, err := stripeToken.New(&stripe.TokenParams{
 			Card: &stripe.CardParams{
-				Number: data.Numer,
+				Number: reqData.Number,
 				Month:  expire[0],
 				Year:   expire[1],
-				CVC:    data.CVC,
+				CVC:    reqData.CVC,
 			},
 		})
 
@@ -57,17 +68,17 @@ var APIRouterSubscribe = Route{
 		}
 
 		customerParams := &stripe.CustomerParams{
-			Desc: "Customer for " + data.Address,
+			Desc: fmt.Sprintf("%s (#%d)", account.Address(), account.ID()),
 		}
 		customerParams.SetSource(t.ID)
-		c, err := customer.New(customerParams)
+		c, err := stripeCustomer.New(customerParams)
 
 		if err != nil {
 			writeJSONError(res, "Invalid account information")
 			return
 		}
 
-		s, err := sub.New(&stripe.SubParams{
+		s, err := stripeSub.New(&stripe.SubParams{
 			Customer: c.ID,
 			Plan:     "blue",
 		})
@@ -77,12 +88,15 @@ var APIRouterSubscribe = Route{
 			return
 		}
 
-		if _, err = pool.Exec("setSubscription", accountID, s.ID); err == nil {
-			writeJSONResponse(res)
+		subscription := data.SubscriptionNew(account.ID(), s.ID)
+		subscription, err = subscription.Store()
+		subscription, err = subscription.Activate()
+
+		if err != nil {
+			writeJSONError(res, "Invalid account information")
 			return
 		}
-		fmt.Println(err)
 
-		writeJSONError(res, "Unable to subscribe")
+		writeJSONResponse(res)
 	},
 }
