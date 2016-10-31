@@ -1,10 +1,9 @@
 package route
 
 import (
-	"fmt"
 	"net/http"
 
-	"gopkg.in/hlandau/passlib.v1"
+	"github.com/clinotes/server/data"
 )
 
 // APIRequestStructAuth is
@@ -13,49 +12,35 @@ type APIRequestStructAuth struct {
 	Token   string `json:"token"`
 }
 
-// APIRouterAuth is
-var APIRouterAuth = Route{
+// APIRouteAuth is
+var APIRouteAuth = Route{
 	"/auth",
 	func(res http.ResponseWriter, req *http.Request) {
 		// Parse JSON request
-		var data APIRequestStructAuth
-		if ensureJSONPayload(req, res, &data) != nil {
+		var reqData APIRequestStructAuth
+		if ensureJSONPayload(req, res, &reqData) != nil {
 			return
 		}
 
-		// Lookup account ID
-		accountID, err := accountIDByAddress(data.Address)
+		// Get account
+		account, err := data.AccountByAddress(reqData.Address)
 		if err != nil {
 			writeJSONError(res, "Unknown account address")
 			return
 		}
 
-		// Search account tokens for parameter
-		rows, err := pool.Query("select token from token WHERE account = $1", accountID)
-		defer rows.Close()
-
-		if err != nil {
-			writeJSONError(res, "Unable to load account details")
+		if !account.IsVerified() {
+			writeJSONError(res, "Account not verified")
 			return
 		}
 
-		for rows.Next() {
-			values, err := rows.Values()
-			// Error with result
-			if err != nil {
-				writeJSONResponse(res)
-				return
-			}
-
-			_, err = passlib.Verify(data.Token, fmt.Sprintf("%s", values[0]))
-			// Found matching token
-			if err == nil {
-				writeJSONResponse(res)
-				return
-			}
+		// Check if account has requested token
+		_, err = account.GetToken(reqData.Token, data.TokenTypeAccess)
+		if err != nil {
+			writeJSONError(res, "Unable to use provided token")
+			return
 		}
 
-		// Return error if no token is found
-		writeJSONError(res, "Unknown account token")
+		writeJSONResponse(res)
 	},
 }
