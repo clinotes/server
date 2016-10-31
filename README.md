@@ -4,6 +4,10 @@ This is a little side-project to learn `Go` and play with [Heroku](https://herok
 
 The service at [clinot.es](https://clinot.es) is a remote note management service with a [CLI client](https://github.com/clinotes/client). Use the hosted service or feel to host it by yourself, it works fine with Heroku and the default PostgreSQL add-on.
 
+## License
+
+Feel free to use the server code, it's released using the [GPLv3 license](https://github.com/clinotes/server/blob/master/LICENSE.md).
+
 ## Features
 
 - [x] Create account
