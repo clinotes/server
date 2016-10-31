@@ -24,9 +24,9 @@ func prepareQueries(conn *pgx.Conn, list map[string]string) error {
 }
 
 func TestMain(m *testing.M) {
-	// conn, _ := pgx.ParseURI(os.Getenv("DATABASE_URL"))
+	conn, _ := pgx.ParseURI(os.Getenv("DATABASE_URL"))
 	pool, _ = pgx.NewConnPool(pgx.ConnPoolConfig{
-		ConnConfig:     pgx.ConnConfig{Host: "127.0.0.1", User: "sebastian", Password: "", Database: "testing"},
+		ConnConfig:     conn,
 		MaxConnections: 1,
 		AfterConnect: func(conn *pgx.Conn) error {
 			queryList := []map[string]string{
