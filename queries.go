@@ -10,7 +10,6 @@ import (
 
 func prepareQueries(conn *pgx.Conn, list map[string]string) error {
 	for name, query := range list {
-		fmt.Println("Register query:", name)
 		_, err := conn.Prepare(name, query)
 
 		if err != nil {
@@ -24,7 +23,6 @@ func prepareQueries(conn *pgx.Conn, list map[string]string) error {
 
 func registerQueries(conn *pgx.Conn) error {
 	setup.Run(conn)
-	fmt.Println("Ran setup")
 
 	queryList := []map[string]string{
 		data.AccountQueries,
