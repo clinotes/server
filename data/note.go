@@ -23,7 +23,28 @@ import (
 	"time"
 )
 
-// NoteQueries has all queries for note access
+// NoteInterface defines Note
+type NoteInterface interface {
+	Account() int
+	CreatedOn() time.Time
+	ID() int
+	IsStored() bool
+	Store() (NoteInterface, error)
+	Text() string
+
+	create() (NoteInterface, error)
+	update() (NoteInterface, error)
+}
+
+// Note implements NoteInterface
+type Note struct {
+	id      int
+	account int
+	text    string
+	created time.Time
+}
+
+// NoteQueries has all queries for Note
 var NoteQueries = map[string]string{
 	"noteAdd": `
 		insert into note (account, text)
@@ -39,49 +60,42 @@ var NoteQueries = map[string]string{
 	`,
 }
 
-// NoteInterface is
-type NoteInterface interface {
-	ID() int
-	Account() int
-	Text() string
-	CreatedOn() time.Time
-
-	IsStored() bool
-	create() (NoteInterface, error)
-	update() (NoteInterface, error)
-
-	Store() (NoteInterface, error)
-}
-
-// Note is
-type Note struct {
-	id      int
-	account int
-	text    string
-	created time.Time
-}
-
-// NoteNew returns
+// NoteNew creates a new Note
 func NoteNew(account int, text string) NoteInterface {
 	return Note{0, account, text, time.Now()}
 }
 
-// Account is
+// NoteByID retrieves Note by id
+func NoteByID(id int) (*Note, error) {
+	return noteByFieldAndValue("noteGetByID", id)
+}
+
+// Account retrieves Note account
 func (n Note) Account() int {
 	return n.account
 }
 
-// Text is
-func (n Note) Text() string {
-	return n.text
-}
-
-// CreatedOn is
+// CreatedOn returns Note create date
 func (n Note) CreatedOn() time.Time {
 	return n.created
 }
 
-// Store writes the note to the database
+// ID returns Account id
+func (n Note) ID() int {
+	return n.id
+}
+
+// IsStored checks if Note is stored in DB
+func (n Note) IsStored() bool {
+	return n.ID() != 0
+}
+
+// Refresh Note from DB
+func (n Note) Refresh() (*Note, error) {
+	return NoteByID(n.ID())
+}
+
+// Store writes Notes to DB
 func (n Note) Store() (NoteInterface, error) {
 	if n.IsStored() {
 		return n.update()
@@ -90,14 +104,9 @@ func (n Note) Store() (NoteInterface, error) {
 	return n.create()
 }
 
-// IsStored returns true if note is from database
-func (n Note) IsStored() bool {
-	return n.ID() != 0
-}
-
-// ID is
-func (n Note) ID() int {
-	return n.id
+// Text returns Note text
+func (n Note) Text() string {
+	return n.text
 }
 
 func (n Note) create() (NoteInterface, error) {
@@ -112,11 +121,6 @@ func (n Note) create() (NoteInterface, error) {
 
 }
 
-// Refresh loads gets the token again from DB
-func (n Note) Refresh() (*Note, error) {
-	return NoteByID(n.ID())
-}
-
 func (n Note) update() (NoteInterface, error) {
 	_, err := pool.Exec("noteUpdate", n.ID(), n.Text())
 
@@ -125,11 +129,6 @@ func (n Note) update() (NoteInterface, error) {
 	}
 
 	return nil, err
-}
-
-// NoteByID returns an Note
-func NoteByID(id int) (*Note, error) {
-	return noteByFieldAndValue("noteGetByID", id)
 }
 
 func noteFromResult(result interface {

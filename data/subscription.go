@@ -23,21 +23,24 @@ import (
 	"time"
 )
 
-// SubscriptionInterface defines subscription interactions
+// SubscriptionInterface defines Subscription
 type SubscriptionInterface interface {
-	ID() int
 	Account() int
-	CreatedOn() time.Time
-	StripeID() string
-	IsActive() bool
-	Store() (SubscriptionInterface, error)
 	Activate() (SubscriptionInterface, error)
+	CreatedOn() time.Time
 	Deactivate() (SubscriptionInterface, error)
-
+	ID() int
+	IsActive() bool
 	IsStored() bool
+	Refresh() (*Subscription, error)
+	Store() (SubscriptionInterface, error)
+	StripeID() string
+
+	create() (SubscriptionInterface, error)
+	update() (SubscriptionInterface, error)
 }
 
-// Subscription is the general account subscription
+// Subscription implements SubscriptionInterface
 type Subscription struct {
 	id       int
 	account  int
@@ -46,7 +49,7 @@ type Subscription struct {
 	active   bool
 }
 
-// SubscriptionQueries has all queries for account access
+// SubscriptionQueries has all queries for Subscription
 var SubscriptionQueries = map[string]string{
 	"subscriptionAdd": `
 		insert into subscription (account, stripeid)
@@ -65,12 +68,27 @@ var SubscriptionQueries = map[string]string{
 	`,
 }
 
-// SubscriptionNew creates a new account
+// SubscriptionNew creates a new Subscription
 func SubscriptionNew(account int, stripeid string) SubscriptionInterface {
 	return &Subscription{0, account, time.Now(), stripeid, false}
 }
 
-// Activate token
+// SubscriptionByID retrieves Subscription by id
+func SubscriptionByID(id int) (*Subscription, error) {
+	return subscriptionByFieldAndValue("subscriptionGetByID", id)
+}
+
+// SubscriptionByAccountID retrieves Subscription by Account id
+func SubscriptionByAccountID(id int) (*Subscription, error) {
+	return subscriptionByFieldAndValue("subscriptionGetByAccountID", id)
+}
+
+// Account returns Subscription account
+func (s Subscription) Account() int {
+	return s.account
+}
+
+// Activate activates Subscripiton and updates the DB
 func (s Subscription) Activate() (SubscriptionInterface, error) {
 	if s.IsActive() {
 		return s, nil
@@ -80,7 +98,12 @@ func (s Subscription) Activate() (SubscriptionInterface, error) {
 	return s.Store()
 }
 
-// Deactivate token
+// CreatedOn returns Subscription create date
+func (s Subscription) CreatedOn() time.Time {
+	return s.created
+}
+
+// Deactivate deactivates Subscrition and updates the DB
 func (s Subscription) Deactivate() (SubscriptionInterface, error) {
 	if !s.IsActive() {
 		return s, nil
@@ -90,37 +113,32 @@ func (s Subscription) Deactivate() (SubscriptionInterface, error) {
 	return s.Store()
 }
 
-// ID is
+// ID returns Subscription id
 func (s Subscription) ID() int {
 	return s.id
 }
 
-// Account is
-func (s Subscription) Account() int {
-	return s.account
-}
-
-// CreatedOn returns the date where the subscription was created
-func (s Subscription) CreatedOn() time.Time {
-	return s.created
-}
-
-// StripeID is
-func (s Subscription) StripeID() string {
-	return s.stripeid
-}
-
-// IsActive returns true if the subscription is active
+// IsActive checks if Subscription is active
 func (s Subscription) IsActive() bool {
 	return s.active
 }
 
-// IsStored returns true if account is from database
+// IsStored checks if Subscription is stored in DB
 func (s Subscription) IsStored() bool {
 	return s.ID() != 0
 }
 
-// Store writes the account to the database
+// Refresh Subscription from DB
+func (s Subscription) Refresh() (*Subscription, error) {
+	return SubscriptionByID(s.ID())
+}
+
+// StripeID returns Subscription stripeid
+func (s Subscription) StripeID() string {
+	return s.stripeid
+}
+
+// Store writes Subscription to DB
 func (s Subscription) Store() (SubscriptionInterface, error) {
 	if s.IsStored() {
 		return s.update()
@@ -148,21 +166,6 @@ func (s Subscription) update() (SubscriptionInterface, error) {
 	}
 
 	return nil, err
-}
-
-// Refresh loads gets the token again from DB
-func (s Subscription) Refresh() (*Subscription, error) {
-	return SubscriptionByID(s.ID())
-}
-
-// SubscriptionByID returns an Token
-func SubscriptionByID(id int) (*Subscription, error) {
-	return subscriptionByFieldAndValue("subscriptionGetByID", id)
-}
-
-// SubscriptionByAccountID returns an Token
-func SubscriptionByAccountID(id int) (*Subscription, error) {
-	return subscriptionByFieldAndValue("subscriptionGetByAccountID", id)
 }
 
 func subscriptionFromResult(result interface {

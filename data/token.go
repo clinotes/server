@@ -20,20 +20,47 @@ package data
 
 import (
 	"errors"
-	"math/rand"
 	"time"
 
 	"gopkg.in/hlandau/passlib.v1"
 )
 
 const (
-	// TokenTypeMaintenace is
+	// TokenTypeMaintenace defines maintenance tokens
 	TokenTypeMaintenace = 1
-	// TokenTypeAccess is
+	// TokenTypeAccess defines access tokens
 	TokenTypeAccess = 2
 )
 
-// TokenQueries has all queries for account access
+// TokenInterface defines Token
+type TokenInterface interface {
+	Account() int
+	Activate() (TokenInterface, error)
+	CreatedOn() time.Time
+	Deactivate() (TokenInterface, error)
+	ID() int
+	IsActive() bool
+	IsSecure() bool
+	Matches(raw string) bool
+	Raw() string
+	Remove() error
+	Store() (TokenInterface, error)
+	Text() string
+	Type() int
+}
+
+// Token implements TokenInterface
+type Token struct {
+	id        int
+	account   int
+	text      string
+	created   time.Time
+	tokenType int
+	active    bool
+	raw       string
+}
+
+// TokenQueries has all queries for Token
 var TokenQueries = map[string]string{
 	"tokenAdd": `
 		insert into token (account, text, type, active)
@@ -58,46 +85,7 @@ var TokenQueries = map[string]string{
 	`,
 }
 
-// TokenInterface is
-type TokenInterface interface {
-	ID() int
-	Account() int
-	Text() string
-	CreatedOn() time.Time
-	Type() int
-	IsActive() bool
-	Activate() (TokenInterface, error)
-	Deactivate() (TokenInterface, error)
-	Store() (TokenInterface, error)
-	IsSecure() bool
-	Remove() error
-	Raw() string
-	Matches(raw string) bool
-}
-
-// Token is
-type Token struct {
-	id        int
-	account   int
-	text      string
-	created   time.Time
-	tokenType int
-	active    bool
-	raw       string
-}
-
-var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-
-// Get returns `n` random characters
-func random(n int) string {
-	s := make([]rune, n)
-	for i := range s {
-		s[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(s)
-}
-
-// TokenNew generates a new token for account
+// TokenNew creates a new Token
 func TokenNew(account int, tokenType int) TokenInterface {
 	token := random(32)
 	hashed, _ := passlib.Hash(token)
@@ -105,12 +93,84 @@ func TokenNew(account int, tokenType int) TokenInterface {
 	return &Token{0, account, hashed, time.Now(), tokenType, true, token}
 }
 
-// IsSecure checks if the raw unhashed token is available
+// TokenByID retrieves Token by id
+func TokenByID(id int) (*Token, error) {
+	return tokenByFieldAndValue("tokenGetByID", id)
+}
+
+// TokenListByAccountAndType retrieves Token list by Account and type
+func TokenListByAccountAndType(account int, tType int) []TokenInterface {
+	var list []TokenInterface
+
+	rows, err := pool.Query("tokenGetAllByAccountAndType", account, tType)
+	defer rows.Close()
+
+	if err != nil {
+		return list
+	}
+
+	for rows.Next() {
+		token, err := tokenFromResult(rows)
+
+		if err == nil {
+			list = append(list, token)
+		}
+	}
+
+	return list
+}
+
+// Account return Token account
+func (t Token) Account() int {
+	return t.account
+}
+
+// Activate activates Token and updates the DB
+func (t Token) Activate() (TokenInterface, error) {
+	if t.IsActive() {
+		return t, nil
+	}
+
+	t.active = true
+	return t.Store()
+}
+
+// CreatedOn returns Token create date
+func (t Token) CreatedOn() time.Time {
+	return t.created
+}
+
+// Deactivate activates Token and updates the DB
+func (t Token) Deactivate() (TokenInterface, error) {
+	if !t.IsActive() {
+		return t, nil
+	}
+
+	t.active = false
+	return t.Store()
+}
+
+// ID returns Token id
+func (t Token) ID() int {
+	return t.id
+}
+
+// IsActive checks if Token is active
+func (t Token) IsActive() bool {
+	return t.active
+}
+
+// IsSecure checks Token is secure
 func (t Token) IsSecure() bool {
 	return t.Raw() == ""
 }
 
-// Matches returns true if the passed raw string matches the hashed token
+// IsStored check if Token is stored in DB
+func (t Token) IsStored() bool {
+	return t.ID() != 0
+}
+
+// Matches checks if text matches Token
 func (t Token) Matches(raw string) bool {
 	_, err := passlib.Verify(raw, t.Text())
 
@@ -121,40 +181,40 @@ func (t Token) Matches(raw string) bool {
 	return false
 }
 
-// Activate token
-func (t Token) Activate() (TokenInterface, error) {
-	if t.IsActive() {
-		return t, nil
-	}
-
-	t.active = true
-	return t.Store()
+// Raw returns Token raw
+func (t Token) Raw() string {
+	return t.raw
 }
 
-// Deactivate token
-func (t Token) Deactivate() (TokenInterface, error) {
-	if !t.IsActive() {
-		return t, nil
-	}
-
-	t.active = false
-	return t.Store()
+// Refresh Token from DB
+func (t Token) Refresh() (*Token, error) {
+	return TokenByID(t.ID())
 }
 
-// Remove a token
+// Remove Token
 func (t Token) Remove() error {
 	_, err := pool.Exec("tokenRemove", t.ID())
 
 	return err
 }
 
-// Store writes the account to the database
+// Store writes Token to DB
 func (t Token) Store() (TokenInterface, error) {
 	if t.IsStored() {
 		return t.update()
 	}
 
 	return t.create()
+}
+
+// Text returns Token text
+func (t Token) Text() string {
+	return t.text
+}
+
+// Type returns Token type
+func (t Token) Type() int {
+	return t.tokenType
 }
 
 func (t Token) create() (TokenInterface, error) {
@@ -176,48 +236,6 @@ func (t Token) update() (TokenInterface, error) {
 	}
 
 	return nil, err
-}
-
-// Raw returns the unhashed string if available
-func (t Token) Raw() string {
-	return t.raw
-}
-
-// IsStored returns true if account is from database
-func (t Token) IsStored() bool {
-	return t.ID() != 0
-}
-
-// Refresh loads gets the token again from DB
-func (t Token) Refresh() (*Token, error) {
-	return TokenByID(t.ID())
-}
-
-// TokenByID returns an Token
-func TokenByID(id int) (*Token, error) {
-	return tokenByFieldAndValue("tokenGetByID", id)
-}
-
-// TokenListByAccountAndType is
-func TokenListByAccountAndType(account int, tType int) []TokenInterface {
-	var list []TokenInterface
-
-	rows, err := pool.Query("tokenGetAllByAccountAndType", account, tType)
-	defer rows.Close()
-
-	if err != nil {
-		return list
-	}
-
-	for rows.Next() {
-		token, err := tokenFromResult(rows)
-
-		if err == nil {
-			list = append(list, token)
-		}
-	}
-
-	return list
 }
 
 func tokenFromResult(result interface {
@@ -248,34 +266,4 @@ func tokenFromResult(result interface {
 
 func tokenByFieldAndValue(query string, value interface{}) (*Token, error) {
 	return tokenFromResult(pool.QueryRow(query, value))
-}
-
-// ID returns the token ID
-func (t Token) ID() int {
-	return t.id
-}
-
-// IsActive is
-func (t Token) IsActive() bool {
-	return t.active
-}
-
-// CreatedOn is
-func (t Token) CreatedOn() time.Time {
-	return t.created
-}
-
-// Account is
-func (t Token) Account() int {
-	return t.account
-}
-
-// Type is
-func (t Token) Type() int {
-	return t.tokenType
-}
-
-// Text is
-func (t Token) Text() string {
-	return t.text
 }
