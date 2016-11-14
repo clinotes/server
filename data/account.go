@@ -25,22 +25,22 @@ import (
 
 // AccountInterface defines account interactions
 type AccountInterface interface {
-	ID() int
 	Address() string
-	IsStored() bool
-	IsVerified() bool
 	CreatedOn() time.Time
-	HasSubscription() bool
 	GetSubscription() SubscriptionInterface
-	Verify() (AccountInterface, error)
 	GetToken(t string, tokenType int) (TokenInterface, error)
 	GetTokenList(tokenType int) []TokenInterface
-
+	HasSubscription() bool
+	ID() int
+	IsStored() bool
+	IsVerified() bool
 	Refresh() (*Account, error)
+	Remove() error
+	Store() (AccountInterface, error)
+	Verify() (AccountInterface, error)
+
 	create() (AccountInterface, error)
 	update() (AccountInterface, error)
-	Store() (AccountInterface, error)
-	Remove() error
 }
 
 // Account is the general user account
@@ -77,12 +77,27 @@ func AccountNew(address string) AccountInterface {
 	return &Account{0, address, time.Now(), false}
 }
 
-// GetTokenList returns a list of token
-func (a Account) GetTokenList(tokenType int) []TokenInterface {
-	return TokenListByAccountAndType(a.ID(), tokenType)
+// AccountByAddress retrieves Account by address
+func AccountByAddress(address string) (AccountInterface, error) {
+	return accountByFieldAndValue("accountGetByAddress", address)
 }
 
-// GetToken reads token from user
+// AccountByID retrieves Account by id
+func AccountByID(id int) (*Account, error) {
+	return accountByFieldAndValue("accountGetByID", id)
+}
+
+// Address returns Account address
+func (a Account) Address() string {
+	return a.address
+}
+
+// CreatedOn returns Account create date
+func (a Account) CreatedOn() time.Time {
+	return a.created
+}
+
+// GetToken retrieves Token for Account
 func (a Account) GetToken(t string, tokenType int) (TokenInterface, error) {
 	var token TokenInterface
 	found := false
@@ -101,19 +116,64 @@ func (a Account) GetToken(t string, tokenType int) (TokenInterface, error) {
 	return nil, errors.New("Token not found")
 }
 
-// Remove an account
+// GetTokenList retrieves all Token for Account
+func (a Account) GetTokenList(tokenType int) []TokenInterface {
+	return TokenListByAccountAndType(a.ID(), tokenType)
+}
+
+// GetSubscription retrieves Account Subscription
+func (a Account) GetSubscription() SubscriptionInterface {
+	sub, err := SubscriptionByAccountID(a.ID())
+
+	if err == nil {
+		return sub
+	}
+
+	return nil
+}
+
+// HasSubscription checks if Account has a Subscription
+func (a Account) HasSubscription() bool {
+	return a.GetSubscription() != nil
+}
+
+// ID returns Account id
+func (a Account) ID() int {
+	return a.id
+}
+
+// IsStored checks if Account is stored in DB
+func (a Account) IsStored() bool {
+	return a.ID() != 0
+}
+
+// IsVerified checks if Account is verified
+func (a Account) IsVerified() bool {
+	return a.verified
+}
+
+// Refresh Account from DB
+func (a Account) Refresh() (*Account, error) {
+	return AccountByID(a.ID())
+}
+
+// Remove Account
 func (a Account) Remove() error {
 	_, err := pool.Exec("accountRemove", a.ID())
 
 	return err
 }
 
-// Refresh loads gets the user again from DB
-func (a Account) Refresh() (*Account, error) {
-	return AccountByID(a.ID())
+// Store writes Account to DB
+func (a Account) Store() (AccountInterface, error) {
+	if a.IsStored() {
+		return a.update()
+	}
+
+	return a.create()
 }
 
-// Verify sets verified to true
+// Verify verifies Account and updates the DB
 func (a Account) Verify() (AccountInterface, error) {
 	_, err := pool.Exec("accountUpdate", a.ID(), true)
 
@@ -144,56 +204,6 @@ func (a Account) update() (AccountInterface, error) {
 	return AccountByID(a.ID())
 }
 
-// Store writes the account to the database
-func (a Account) Store() (AccountInterface, error) {
-	if a.IsStored() {
-		return a.update()
-	}
-
-	return a.create()
-}
-
-// HasSubscription is
-func (a Account) HasSubscription() bool {
-	return a.GetSubscription() != nil
-}
-
-// IsStored returns true if account is from database
-func (a Account) IsStored() bool {
-	return a.ID() != 0
-}
-
-// GetSubscription is
-func (a Account) GetSubscription() SubscriptionInterface {
-	sub, err := SubscriptionByAccountID(a.ID())
-
-	if err == nil {
-		return sub
-	}
-
-	return nil
-}
-
-// CreatedOn is
-func (a Account) CreatedOn() time.Time {
-	return a.created
-}
-
-// IsVerified is
-func (a Account) IsVerified() bool {
-	return a.verified
-}
-
-// Address is
-func (a Account) Address() string {
-	return a.address
-}
-
-// ID is
-func (a Account) ID() int {
-	return a.id
-}
-
 func accountFromResult(result interface {
 	Scan(...interface{}) (err error)
 }) (*Account, error) {
@@ -218,14 +228,4 @@ func accountFromResult(result interface {
 
 func accountByFieldAndValue(query string, value interface{}) (*Account, error) {
 	return accountFromResult(pool.QueryRow(query, value))
-}
-
-// AccountByAddress returns an Account
-func AccountByAddress(address string) (AccountInterface, error) {
-	return accountByFieldAndValue("accountGetByAddress", address)
-}
-
-// AccountByID returns an Account
-func AccountByID(id int) (*Account, error) {
-	return accountByFieldAndValue("accountGetByID", id)
 }
