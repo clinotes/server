@@ -20,7 +20,7 @@ Feel free to use the server code, it's released using the [GPLv3 license](https:
 - [x] Create authorization token
 - [x] Verify authorization token
 - [x] Create subscriptions using [Stripe.com](https://stripe.com)
-- [ ] Create notes
+- [x] Create notes
 
 ## Dependecies
 
