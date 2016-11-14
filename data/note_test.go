@@ -16,45 +16,29 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package main
+package data
 
 import (
-	"fmt"
+	"testing"
 
-	"github.com/clinotes/server/data"
-	"github.com/clinotes/server/setup"
-	"github.com/jackc/pgx"
+	"github.com/stretchr/testify/assert"
 )
 
-func prepareQueries(conn *pgx.Conn, list map[string]string) error {
-	for name, query := range list {
-		_, err := conn.Prepare(name, query)
+func TestNote(t *testing.T) {
+	acc := AccountNew("mail@example.com")
+	user, err := acc.Store()
 
-		if err != nil {
-			fmt.Println("Failed to prepare query.", err)
-			return err
-		}
+	note := NoteNew(user.ID(), "example content")
+
+	assert.False(t, note.IsStored())
+	assert.Equal(t, "example content", note.Text())
+	assert.Equal(t, user.ID(), note.Account())
+
+	note, err = note.Store()
+
+	if assert.Nil(t, err) {
+		assert.True(t, note.IsStored())
 	}
 
-	return nil
-}
-
-func registerQueries(conn *pgx.Conn) error {
-	setup.Run(conn)
-
-	queryList := []map[string]string{
-		data.AccountQueries,
-		data.TokenQueries,
-		data.SubscriptionQueries,
-		data.NoteQueries,
-	}
-
-	for _, item := range queryList {
-		err := prepareQueries(conn, item)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	user.Remove()
 }

@@ -30,6 +30,13 @@ func Run(pool *pgx.Conn) {
 	    verified BOOLEAN DEFAULT false NOT NULL
 		);
 
+		CREATE TABLE note(
+	    id serial primary key,
+	    account INTEGER NOT NULL,
+			text TEXT NOT NULL,
+	    created TIMESTAMP DEFAULT now() NOT NULL
+		);
+
 		CREATE TABLE subscription(
 	    id serial primary key,
 	    account INTEGER NOT NULL,
@@ -56,5 +63,8 @@ func Run(pool *pgx.Conn) {
 
 		ALTER TABLE token ADD FOREIGN KEY (account) REFERENCES account (id) on delete cascade;
 		CREATE UNIQUE INDEX token_id_uindex ON token (id);
+
+		ALTER TABLE note ADD FOREIGN KEY (account) REFERENCES account (id) on delete cascade;
+		CREATE UNIQUE INDEX note_id_uindex ON note (id);
 	`)
 }

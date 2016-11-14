@@ -19,7 +19,6 @@
 package route
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/clinotes/server/data"
@@ -61,9 +60,14 @@ var APIRouteAdd = Route{
 			return
 		}
 
-		fmt.Printf("Add Note: %+v\n", data.NoteNew(reqData.Note))
+		note := data.NoteNew(account.ID(), reqData.Note)
+		note, err = note.Store()
 
-		// Return error if no token is found
-		writeJSONError(res, "Unable to store note")
+		if err != nil {
+			writeJSONError(res, "Unable to store note")
+			return
+		}
+
+		writeJSONResponse(res)
 	},
 }

@@ -54,6 +54,7 @@ func TestMain(m *testing.M) {
 				AccountQueries,
 				TokenQueries,
 				SubscriptionQueries,
+				NoteQueries,
 			}
 
 			for _, item := range queryList {
