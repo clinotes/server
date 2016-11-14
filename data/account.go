@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-// AccountInterface defines account interactions
+// AccountInterface defines Account
 type AccountInterface interface {
 	Address() string
 	CreatedOn() time.Time
@@ -43,7 +43,7 @@ type AccountInterface interface {
 	update() (AccountInterface, error)
 }
 
-// Account is the general user account
+// Account implements AccountInterface
 type Account struct {
 	id       int
 	address  string
@@ -51,7 +51,7 @@ type Account struct {
 	verified bool
 }
 
-// AccountQueries has all queries for account access
+// AccountQueries has all queries for Account
 var AccountQueries = map[string]string{
 	"accountAdd": `
 		insert into account (address)

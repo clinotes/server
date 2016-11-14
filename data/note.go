@@ -23,7 +23,28 @@ import (
 	"time"
 )
 
-// NoteQueries has all queries for note access
+// NoteInterface defines Note
+type NoteInterface interface {
+	Account() int
+	CreatedOn() time.Time
+	ID() int
+	IsStored() bool
+	Store() (NoteInterface, error)
+	Text() string
+
+	create() (NoteInterface, error)
+	update() (NoteInterface, error)
+}
+
+// Note implements NoteInterface
+type Note struct {
+	id      int
+	account int
+	text    string
+	created time.Time
+}
+
+// NoteQueries has all queries for Note
 var NoteQueries = map[string]string{
 	"noteAdd": `
 		insert into note (account, text)
@@ -39,38 +60,17 @@ var NoteQueries = map[string]string{
 	`,
 }
 
-// NoteInterface is
-type NoteInterface interface {
-	Account() int
-	CreatedOn() time.Time
-	ID() int
-	IsStored() bool
-	Store() (NoteInterface, error)
-	Text() string
-
-	create() (NoteInterface, error)
-	update() (NoteInterface, error)
-}
-
-// Note is
-type Note struct {
-	id      int
-	account int
-	text    string
-	created time.Time
-}
-
 // NoteNew creates a new Note
 func NoteNew(account int, text string) NoteInterface {
 	return Note{0, account, text, time.Now()}
 }
 
-// NoteByID returns Note by id
+// NoteByID retrieves Note by id
 func NoteByID(id int) (*Note, error) {
 	return noteByFieldAndValue("noteGetByID", id)
 }
 
-// Account returns Note account
+// Account retrieves Note account
 func (n Note) Account() int {
 	return n.account
 }

@@ -40,7 +40,7 @@ type SubscriptionInterface interface {
 	update() (SubscriptionInterface, error)
 }
 
-// Subscription is the Subscription
+// Subscription implements SubscriptionInterface
 type Subscription struct {
 	id       int
 	account  int

@@ -18,13 +18,27 @@
 
 package data
 
-import "github.com/jackc/pgx"
+import (
+	"math/rand"
+
+	"github.com/jackc/pgx"
+)
 
 var (
-	pool *pgx.ConnPool
+	pool    *pgx.ConnPool
+	letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 )
 
 // Pool configures the PostgreSQL pool
 func Pool(use *pgx.ConnPool) {
 	pool = use
+}
+
+// Get returns `n` random characters
+func random(n int) string {
+	s := make([]rune, n)
+	for i := range s {
+		s[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(s)
 }
