@@ -28,6 +28,8 @@ func TestNote(t *testing.T) {
 	acc := AccountNew("mail@example.com")
 	user, err := acc.Store()
 
+	assert.Nil(t, err)
+
 	note := NoteNew(user.ID(), "example content")
 
 	assert.False(t, note.IsStored())
@@ -39,6 +41,24 @@ func TestNote(t *testing.T) {
 	if assert.Nil(t, err) {
 		assert.True(t, note.IsStored())
 	}
+
+	user.Remove()
+}
+
+func TestNoteLimit(t *testing.T) {
+	acc := AccountNew("mail@example.com")
+	user, err := acc.Store()
+
+	assert.Nil(t, err)
+
+	note := NoteNew(user.ID(), "This is a note! This is a note! This is a note! This is a note! This is a note! This is a note! This is a note!")
+
+	assert.False(t, note.IsStored())
+	assert.Equal(t, user.ID(), note.Account())
+
+	note, err = note.Store()
+
+	assert.NotNil(t, err)
 
 	user.Remove()
 }
