@@ -58,6 +58,11 @@ var NoteQueries = map[string]string{
 	"noteGetByID": `
 		SELECT id, account, text, created FROM note WHERE id = $1
 	`,
+	"noteListGetByAccount": `
+		SELECT * FROM (
+			SELECT id, account, text, created FROM note WHERE account = $1 ORDER BY id DESC LIMIT 10
+		) as list ORDER BY id ASC
+	`,
 }
 
 // NoteNew creates a new Note
@@ -68,6 +73,11 @@ func NoteNew(account int, text string) NoteInterface {
 // NoteByID retrieves Note by id
 func NoteByID(id int) (*Note, error) {
 	return noteByFieldAndValue("noteGetByID", id)
+}
+
+// NoteListByAccount retrieves Note by id
+func NoteListByAccount(account int) ([]Note, error) {
+	return noteListByFieldAndValue("noteListGetByAccount", account)
 }
 
 // Account retrieves Note account
@@ -155,6 +165,44 @@ func noteFromResult(result interface {
 	}
 
 	return nil, errors.New("Failed to get token")
+}
+
+func noteListFromResult(result interface {
+	Next() bool
+	Scan(dest ...interface{}) (err error)
+}) ([]Note, error) {
+	var noteID int
+	var noteAccount int
+	var noteText string
+	var noteCreated time.Time
+	var list []Note
+
+	for result.Next() {
+		err := result.Scan(
+			&noteID,
+			&noteAccount,
+			&noteText,
+			&noteCreated,
+		)
+
+		if err != nil {
+			return nil, errors.New("Failed to get notes")
+		}
+
+		list = append(list, Note{noteID, noteAccount, noteText, noteCreated})
+	}
+
+	return list, nil
+}
+
+func noteListByFieldAndValue(query string, value interface{}) ([]Note, error) {
+	q, err := pool.Query(query, value)
+
+	if err != nil {
+		return nil, errors.New("Failed to get notes")
+	}
+
+	return noteListFromResult(q)
 }
 
 func noteByFieldAndValue(query string, value interface{}) (*Note, error) {

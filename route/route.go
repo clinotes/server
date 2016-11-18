@@ -74,6 +74,7 @@ func Routes(p *pgx.ConnPool, pm *postmark.Client) []Route {
 		APIRouteTokenCreate,
 		APIRouteSubscribe,
 		APIRouteAccount,
+		APIRouteNotes,
 	}
 }
 

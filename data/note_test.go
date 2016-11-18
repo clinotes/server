@@ -62,3 +62,27 @@ func TestNoteLimit(t *testing.T) {
 
 	user.Remove()
 }
+
+func TestNoteList(t *testing.T) {
+	acc := AccountNew("mail@example.com")
+	user, err := acc.Store()
+
+	assert.Nil(t, err)
+
+	note := NoteNew(user.ID(), "This is a note!")
+	note, err = note.Store()
+
+	assert.Nil(t, err)
+
+	note2 := NoteNew(user.ID(), "This is a second note!")
+	note2, err = note2.Store()
+
+	assert.Nil(t, err)
+
+	list, err := NoteListByAccount(user.ID())
+
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(list))
+
+	user.Remove()
+}
