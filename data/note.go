@@ -97,6 +97,9 @@ func (n Note) Refresh() (*Note, error) {
 
 // Store writes Notes to DB
 func (n Note) Store() (NoteInterface, error) {
+	if len(n.Text()) > 100 {
+		return nil, errors.New("Note must not be longer than 100 characters")
+	}
 	if n.IsStored() {
 		return n.update()
 	}
