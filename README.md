@@ -28,9 +28,9 @@ The API server works fine on a free Heroku dyno using the free PostgreSQL add-on
 
 [Postmark](https://postmarkapp.com) is used for sending emails to new users. You need to create three templates in your Postmark account and configure the template IDs in your environment variables. You will find the three HTML and plaintext templates inside the `templates/` folder:
 
-* [Welcome]()
-* [Confirmation]()
-* [Access Token]()
+* [Welcome](/templates/welcome)
+* [Confirmation](/templates/confirmation)
+* [Access Token](/templates/token)
 
 Make sure to validate your sender address in Postmark as well!
 
