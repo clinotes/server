@@ -54,7 +54,7 @@ Web URL: https://exmaple-url-12345.herokuapp.com/
 $ > heroku config:set MAX_DB_CONNECTIONS=5
 $ > heroku config:set POSTMARK_API_KEY=API_KEY
 $ > heroku config:set POSTMARK_TEMPLATE_WELCOME=TEMPLATE_ID
-$ > heroku config:set POSTMARK_TEMPLATE_CONFIRMATION=TEMPLATE_ID
+$ > heroku config:set POSTMARK_TEMPLATE_CONFIRM=TEMPLATE_ID
 $ > heroku config:set POSTMARK_TEMPLATE_TOKEN=TEMPLATE_ID
 $ > heroku config:set POSTMARK_FROM=mail@clinot.es
 $ > heroku config:set POSTMARK_REPLY_TO='"CLI Notes" <mail@clinot.es>'
