@@ -1,0 +1,12 @@
+Thanks for creating a CLINotes account. It's awesome to have you on board! Please make sure to verify you account.
+
+Verification Token:
+
+{{token}}
+
+All the best,
+CLINotes
+
+--
+
+https://clinot.es

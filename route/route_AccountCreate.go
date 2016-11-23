@@ -22,15 +22,12 @@ import (
 	"net/http"
 
 	"github.com/clinotes/server/data"
-	"github.com/keighl/postmark"
 )
 
 // APIRequestStructCreateUser is
 type APIRequestStructCreateUser struct {
 	Address string `json:"address"`
 }
-
-var postmarkTemplateIDauthUserCreate = 1012641
 
 // APIRouteAccountCreate is
 var APIRouteAccountCreate = Route{
@@ -62,15 +59,11 @@ var APIRouteAccountCreate = Route{
 		}
 
 		// Send confirmation mail using Postmark
-		_, err = pmark.SendTemplatedEmail(postmark.TemplatedEmail{
-			TemplateId: int64(postmarkTemplateIDauthUserCreate),
-			TemplateModel: map[string]interface{}{
-				"token": tokenRaw,
-			},
-			From:    "mail@clinot.es",
-			To:      account.Address(),
-			ReplyTo: "\"CLINotes\" <mail@clinot.es>",
-		})
+		_, err = sendTokenWithTemplate(account.Address(), tokenRaw, conf.TemplateWelcome)
+		if err != nil {
+			writeJSONError(res, "Unable to send welcome mail")
+			return
+		}
 
 		// If mail cannot be sent, fail and remove user
 		if err != nil {

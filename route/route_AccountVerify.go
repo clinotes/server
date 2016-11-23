@@ -22,7 +22,6 @@ import (
 	"net/http"
 
 	"github.com/clinotes/server/data"
-	"github.com/keighl/postmark"
 )
 
 // APIRequestStructVerifyUser is
@@ -30,8 +29,6 @@ type APIRequestStructVerifyUser struct {
 	Address string `json:"address"`
 	Token   string `json:"token"`
 }
-
-var postmarkTemplateIDauthUserVerify = 1012661
 
 // APIRouteAccountVerify is
 var APIRouteAccountVerify = Route{
@@ -64,16 +61,11 @@ var APIRouteAccountVerify = Route{
 			return
 		}
 
-		// Send confirmation mail
-		pmark.SendTemplatedEmail(postmark.TemplatedEmail{
-			TemplateId: int64(postmarkTemplateIDauthUserVerify),
-			From:       "mail@clinot.es",
-			To:         account.Address(),
-			TemplateModel: map[string]interface{}{
-				"token": reqData.Token,
-			},
-			ReplyTo: "\"CLINotes\" <mail@clinot.es>",
-		})
+		_, err = sendTokenWithTemplate(account.Address(), reqData.Token, conf.TemplateConfirm)
+		if err != nil {
+			writeJSONError(res, "Unable to send verification mail")
+			return
+		}
 
 		writeJSONResponse(res)
 	},

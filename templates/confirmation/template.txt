@@ -1,0 +1,12 @@
+Your CLINotes account has been verified
+
+Verification Token used:
+
+{{token}}
+
+All the best,
+CLINotes
+
+--
+
+https://clinot.es

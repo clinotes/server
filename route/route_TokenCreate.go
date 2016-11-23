@@ -22,15 +22,12 @@ import (
 	"net/http"
 
 	"github.com/clinotes/server/data"
-	"github.com/keighl/postmark"
 )
 
 // APIRequestStructCreateToken is
 type APIRequestStructCreateToken struct {
 	Address string `json:"address"`
 }
-
-var postmarkTemplateIDauthTokenCreate = 1010802
 
 // APIRouteTokenCreate is
 var APIRouteTokenCreate = Route{
@@ -58,16 +55,7 @@ var APIRouteTokenCreate = Route{
 		tokenRaw := token.Raw()
 		token, err = token.Store()
 
-		_, err = pmark.SendTemplatedEmail(postmark.TemplatedEmail{
-			TemplateId: int64(postmarkTemplateIDauthTokenCreate),
-			TemplateModel: map[string]interface{}{
-				"token": tokenRaw,
-			},
-			From:    "mail@clinot.es",
-			To:      reqData.Address,
-			ReplyTo: "\"CLINotes\" <mail@clinot.es>",
-		})
-
+		_, err = sendTokenWithTemplate(reqData.Address, tokenRaw, conf.TemplateToken)
 		if err != nil {
 			token.Remove()
 			writeJSONError(res, "Unable to create token for account")

@@ -24,12 +24,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/clinotes/server/setup"
 	"github.com/jackc/pgx"
 )
 
 func prepareQueries(conn *pgx.Conn, list map[string]string) error {
-	setup.Run(conn)
+	Setup(conn)
 
 	for name, query := range list {
 		fmt.Println("Register query:", name)

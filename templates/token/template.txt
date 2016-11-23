@@ -1,0 +1,12 @@
+You requested a new access token to manage your notes.
+
+Token:
+
+{{token}}
+
+All the best,
+CLINotes
+
+--
+
+https://clinot.es

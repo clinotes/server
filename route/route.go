@@ -21,16 +21,28 @@ package route
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
-	"github.com/jackc/pgx"
 	"github.com/keighl/postmark"
 )
 
 var (
-	pool  *pgx.ConnPool
-	pmark *postmark.Client
+	conf      Configuration
+	pmark     *postmark.Client
+	templates map[string]int64
 )
+
+// Configuration stores need variables
+type Configuration struct {
+	TemplateWelcome int64
+	TemplateConfirm int64
+	TemplateToken   int64
+
+	PostmarkToken   string
+	PostmarkFrom    string
+	PostmarkReplyTo string
+}
 
 // Route is a route
 type Route struct {
@@ -61,10 +73,20 @@ func writeJSONError(res http.ResponseWriter, text string) error {
 	return errors.New(text)
 }
 
+// SetTemplate sets template id for a key
+func SetTemplate(key string, id int64) {
+	templates[key] = id
+}
+
+// GetTemplate gets template id for a key
+func GetTemplate(key string) int64 {
+	return templates[key]
+}
+
 // Routes returns available routes
-func Routes(p *pgx.ConnPool, pm *postmark.Client) []Route {
-	pool = p
-	pmark = pm
+func Routes(config Configuration) []Route {
+	conf = config
+	pmark = postmark.NewClient(config.PostmarkToken, "")
 
 	return []Route{
 		APIRouteAdd,
@@ -94,4 +116,17 @@ func ensureJSONPayload(req *http.Request, res http.ResponseWriter, data interfac
 
 	// Return nil if everything is fine
 	return nil
+}
+
+func sendTokenWithTemplate(to string, token string, template int64) (postmark.EmailResponse, error) {
+	fmt.Printf("Using %d for mail\n", template)
+	return pmark.SendTemplatedEmail(postmark.TemplatedEmail{
+		TemplateId: template,
+		TemplateModel: map[string]interface{}{
+			"token": token,
+		},
+		From:    conf.PostmarkFrom,
+		To:      to,
+		ReplyTo: conf.PostmarkReplyTo,
+	})
 }
