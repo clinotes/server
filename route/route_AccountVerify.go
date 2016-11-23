@@ -19,6 +19,7 @@
 package route
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/clinotes/server/data"
@@ -33,40 +34,36 @@ type APIRequestStructVerifyUser struct {
 // APIRouteAccountVerify is
 var APIRouteAccountVerify = Route{
 	"/account/verify",
-	func(res http.ResponseWriter, req *http.Request) {
+	func(res http.ResponseWriter, req *http.Request) (error, interface{}) {
 		// Parse JSON request
 		var reqData APIRequestStructVerifyUser
-		if ensureJSONPayload(req, res, &reqData) != nil {
-			return
+		if err := checkJSONBody(req, res, &reqData); err != nil {
+			return err, nil
 		}
 
 		// Get account
 		account, err := data.AccountByAddress(reqData.Address)
 		if err != nil {
-			writeJSONError(res, "Unknown account address")
-			return
+			return errors.New("Unknown account address"), nil
 		}
 
 		// Check if account has requested token
 		_, err = account.GetToken(reqData.Token, data.TokenTypeMaintenace)
 		if err != nil {
-			writeJSONError(res, "Unable to use provided token")
-			return
+			return errors.New("Unable to use provided token"), nil
 		}
 
 		// Verify account
 		account, err = account.Verify()
 		if err != nil {
-			writeJSONError(res, "Unable to use provided token")
-			return
+			return errors.New("Unable to use provided token"), nil
 		}
 
 		_, err = sendTokenWithTemplate(account.Address(), reqData.Token, conf.TemplateConfirm)
 		if err != nil {
-			writeJSONError(res, "Unable to send verification mail")
-			return
+			return errors.New("Unable to send verification mail"), nil
 		}
 
-		writeJSONResponse(res)
+		return nil, nil
 	},
 }

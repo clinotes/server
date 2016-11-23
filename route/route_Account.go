@@ -19,6 +19,7 @@
 package route
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -41,40 +42,35 @@ type APIResponseStructAccount struct {
 // APIRouteAccount is
 var APIRouteAccount = Route{
 	"/account",
-	func(res http.ResponseWriter, req *http.Request) {
+	func(res http.ResponseWriter, req *http.Request) (error, interface{}) {
 		// Parse JSON request
 		var reqData APIRequestStructMe
-		if ensureJSONPayload(req, res, &reqData) != nil {
-			return
+		if err := checkJSONBody(req, res, &reqData); err != nil {
+			return err, nil
 		}
 
 		// Get account
 		account, err := data.AccountByAddress(reqData.Address)
 		if err != nil {
-			writeJSONError(res, "Unknown account address")
-			return
+			return errors.New("Unknown account address"), nil
 		}
 
 		// Check if account has requested token
 		_, err = account.GetToken(reqData.Token, data.TokenTypeAccess)
 		if err != nil {
-			writeJSONError(res, "Unable to use provided token")
-			return
+			return errors.New("Unable to use provided token"), nil
 		}
 
 		// Verify account
 		account, err = account.Verify()
 		if err != nil {
-			writeJSONError(res, "Unable to use provided token")
-			return
+			return errors.New("Unable to use provided token"), nil
 		}
 
-		resData := APIResponseStructAccount{
+		return nil, APIResponseStructAccount{
 			account.Address(),
 			account.CreatedOn(),
 			account.HasSubscription(),
 		}
-
-		writeJSONResponseData(res, resData)
 	},
 }

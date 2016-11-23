@@ -19,6 +19,7 @@
 package route
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/clinotes/server/data"
@@ -32,10 +33,10 @@ type APIRequestStructCreateUser struct {
 // APIRouteAccountCreate is
 var APIRouteAccountCreate = Route{
 	"/account/create",
-	func(res http.ResponseWriter, req *http.Request) {
+	func(res http.ResponseWriter, req *http.Request) (error, interface{}) {
 		var reqData APIRequestStructCreateUser
-		if ensureJSONPayload(req, res, &reqData) != nil {
-			return
+		if err := checkJSONBody(req, res, &reqData); err != nil {
+			return err, nil
 		}
 
 		account := data.AccountNew(reqData.Address)
@@ -43,8 +44,7 @@ var APIRouteAccountCreate = Route{
 
 		// If account cannot be created, fail
 		if err != nil {
-			writeJSONError(res, "Unable to create account")
-			return
+			return errors.New("Unable to create account"), nil
 		}
 
 		token := data.TokenNew(account.ID(), data.TokenTypeMaintenace)
@@ -54,25 +54,22 @@ var APIRouteAccountCreate = Route{
 		// If token cannot be created, fail and remove user
 		if err != nil {
 			account.Remove()
-			writeJSONError(res, "Unable to create account")
-			return
+			return errors.New("Unable to create account"), nil
 		}
 
 		// Send confirmation mail using Postmark
 		_, err = sendTokenWithTemplate(account.Address(), tokenRaw, conf.TemplateWelcome)
 		if err != nil {
-			writeJSONError(res, "Unable to send welcome mail")
-			return
+			return errors.New("Unable to send welcome mail"), nil
 		}
 
 		// If mail cannot be sent, fail and remove user
 		if err != nil {
 			account.Remove()
-			writeJSONError(res, "Unable to create account")
-			return
+			return errors.New("Unable to create account"), nil
 		}
 
 		// Done!
-		writeJSONResponse(res)
+		return nil, nil
 	},
 }

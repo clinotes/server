@@ -27,6 +27,25 @@ import (
 	"github.com/keighl/postmark"
 )
 
+// Handler is
+type Handler func(http.ResponseWriter, *http.Request) (error, interface{})
+
+func (handler Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Set JSON response header
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	err, data := handler(w, r)
+	if err != nil {
+		writeJSONError(w, err.Error())
+	} else {
+		if data != nil {
+			writeJSONResponseData(w, data)
+		} else {
+			writeJSONResponse(w)
+		}
+	}
+}
+
 var (
 	conf      Configuration
 	pmark     *postmark.Client
@@ -47,7 +66,7 @@ type Configuration struct {
 // Route is a route
 type Route struct {
 	URL     string
-	Handler func(res http.ResponseWriter, req *http.Request)
+	Handler func(res http.ResponseWriter, req *http.Request) (error, interface{})
 }
 
 // APIResponseData is
@@ -100,10 +119,7 @@ func Routes(config Configuration) []Route {
 	}
 }
 
-func ensureJSONPayload(req *http.Request, res http.ResponseWriter, data interface{}) error {
-	// Set JSON response header
-	res.Header().Set("Content-Type", "application/json; charset=utf-8")
-
+func checkJSONBody(req *http.Request, res http.ResponseWriter, data interface{}) error {
 	// Decode body
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&data)
@@ -111,10 +127,9 @@ func ensureJSONPayload(req *http.Request, res http.ResponseWriter, data interfac
 
 	// Respond with BadRequest status
 	if err != nil {
-		return writeJSONError(res, "Invalid JSON data")
+		return errors.New("Invalid JSON data")
 	}
 
-	// Return nil if everything is fine
 	return nil
 }
 

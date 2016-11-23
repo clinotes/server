@@ -19,6 +19,7 @@
 package route
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -40,35 +41,32 @@ type APIResponseStructNote struct {
 // APIRouteNotes is
 var APIRouteNotes = Route{
 	"/notes",
-	func(res http.ResponseWriter, req *http.Request) {
+	func(res http.ResponseWriter, req *http.Request) (error, interface{}) {
 		// Parse JSON request
 		var reqData APIRequestStructNotes
-		if ensureJSONPayload(req, res, &reqData) != nil {
-			return
+		if err := checkJSONBody(req, res, &reqData); err != nil {
+			return err, nil
 		}
 
 		// Get account
 		account, err := data.AccountByAddress(reqData.Address)
 		if err != nil {
-			writeJSONError(res, "Unknown account address")
-			return
+			return errors.New("Unknown account address"), nil
 		}
 
 		if !account.IsVerified() {
-			writeJSONError(res, "Account not verified")
-			return
+			return errors.New("Account not verified"), nil
 		}
 
 		// Check if account has requested token
 		_, err = account.GetToken(reqData.Token, data.TokenTypeAccess)
 		if err != nil {
-			writeJSONError(res, "Unable to use provided token")
-			return
+			return errors.New("Unable to use provided token"), nil
 		}
 
 		list, err := data.NoteListByAccount(account.ID())
 		if err != nil {
-			writeJSONError(res, "Failed to get notes")
+			return errors.New("Failed to get notes"), nil
 		}
 
 		var noteList []APIResponseStructNote
@@ -76,6 +74,6 @@ var APIRouteNotes = Route{
 			noteList = append(noteList, APIResponseStructNote{list[i].Text(), list[i].CreatedOn()})
 		}
 
-		writeJSONResponseData(res, noteList)
+		return nil, noteList
 	},
 }

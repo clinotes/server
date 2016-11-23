@@ -19,6 +19,7 @@
 package route
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/clinotes/server/data"
@@ -32,23 +33,21 @@ type APIRequestStructCreateToken struct {
 // APIRouteTokenCreate is
 var APIRouteTokenCreate = Route{
 	"/token/create",
-	func(res http.ResponseWriter, req *http.Request) {
+	func(res http.ResponseWriter, req *http.Request) (error, interface{}) {
 		// Parse JSON request
 		var reqData APIRequestStructCreateToken
-		if ensureJSONPayload(req, res, &reqData) != nil {
-			return
+		if err := checkJSONBody(req, res, &reqData); err != nil {
+			return err, nil
 		}
 
 		// Get account
 		account, err := data.AccountByAddress(reqData.Address)
 		if err != nil {
-			writeJSONError(res, "Unknown account address")
-			return
+			return errors.New("Unknown account address"), nil
 		}
 
 		if !account.IsVerified() {
-			writeJSONError(res, "Account not verified")
-			return
+			return errors.New("Account not verified"), nil
 		}
 
 		token := data.TokenNew(account.ID(), data.TokenTypeAccess)
@@ -58,10 +57,9 @@ var APIRouteTokenCreate = Route{
 		_, err = sendTokenWithTemplate(reqData.Address, tokenRaw, conf.TemplateToken)
 		if err != nil {
 			token.Remove()
-			writeJSONError(res, "Unable to create token for account")
-			return
+			return errors.New("Unable to create token for account"), nil
 		}
 
-		writeJSONResponse(res)
+		return nil, nil
 	},
 }
