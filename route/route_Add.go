@@ -35,34 +35,34 @@ type APIRequestStructAdd struct {
 // APIRouteAdd is
 var APIRouteAdd = Route{
 	"/add",
-	func(res http.ResponseWriter, req *http.Request) (error, interface{}) {
+	func(res http.ResponseWriter, req *http.Request) (interface{}, error) {
 		// Parse JSON request
 		var reqData APIRequestStructAdd
 		if err := checkJSONBody(req, res, &reqData); err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		// Get account
 		account, err := data.AccountByAddress(reqData.Address)
 		if err != nil {
-			return errors.New("Unknown account address"), nil
+			return nil, errors.New("Unknown account address")
 		}
 
 		if !account.IsVerified() {
-			return errors.New("Account not verified"), nil
+			return nil, errors.New("Account not verified")
 		}
 
 		// Check if account has requested token
 		_, err = account.GetToken(reqData.Token, data.TokenTypeAccess)
 		if err != nil {
-			return errors.New("Unable to use provided token"), nil
+			return nil, errors.New("Unable to use provided token")
 		}
 
 		note := data.NoteNew(account.ID(), reqData.Note)
 		note, err = note.Store()
 
 		if err != nil {
-			return errors.New("Unable to store note"), nil
+			return nil, errors.New("Unable to store note")
 		}
 
 		return nil, nil

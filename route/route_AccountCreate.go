@@ -33,10 +33,10 @@ type APIRequestStructCreateUser struct {
 // APIRouteAccountCreate is
 var APIRouteAccountCreate = Route{
 	"/account/create",
-	func(res http.ResponseWriter, req *http.Request) (error, interface{}) {
+	func(res http.ResponseWriter, req *http.Request) (interface{}, error) {
 		var reqData APIRequestStructCreateUser
 		if err := checkJSONBody(req, res, &reqData); err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		account := data.AccountNew(reqData.Address)
@@ -44,7 +44,7 @@ var APIRouteAccountCreate = Route{
 
 		// If account cannot be created, fail
 		if err != nil {
-			return errors.New("Unable to create account"), nil
+			return nil, errors.New("Unable to create account")
 		}
 
 		token := data.TokenNew(account.ID(), data.TokenTypeMaintenace)
@@ -54,19 +54,19 @@ var APIRouteAccountCreate = Route{
 		// If token cannot be created, fail and remove user
 		if err != nil {
 			account.Remove()
-			return errors.New("Unable to create account"), nil
+			return nil, errors.New("Unable to create account")
 		}
 
 		// Send confirmation mail using Postmark
 		_, err = sendTokenWithTemplate(account.Address(), tokenRaw, conf.TemplateWelcome)
 		if err != nil {
-			return errors.New("Unable to send welcome mail"), nil
+			return nil, errors.New("Unable to send welcome mail")
 		}
 
 		// If mail cannot be sent, fail and remove user
 		if err != nil {
 			account.Remove()
-			return errors.New("Unable to create account"), nil
+			return nil, errors.New("Unable to create account")
 		}
 
 		// Done!

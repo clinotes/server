@@ -28,13 +28,13 @@ import (
 )
 
 // Handler is
-type Handler func(http.ResponseWriter, *http.Request) (error, interface{})
+type Handler func(http.ResponseWriter, *http.Request) (interface{}, error)
 
 func (handler Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Set JSON response header
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	err, data := handler(w, r)
+	data, err := handler(w, r)
 	if err != nil {
 		writeJSONError(w, err.Error())
 	} else {
@@ -66,7 +66,7 @@ type Configuration struct {
 // Route is a route
 type Route struct {
 	URL     string
-	Handler func(res http.ResponseWriter, req *http.Request) (error, interface{})
+	Handler Handler
 }
 
 // APIResponseData is
@@ -85,11 +85,9 @@ func writeJSONResponseData(res http.ResponseWriter, data interface{}) {
 	res.Write([]byte(string(slcB)))
 }
 
-func writeJSONError(res http.ResponseWriter, text string) error {
+func writeJSONError(res http.ResponseWriter, text string) {
 	res.WriteHeader(http.StatusBadRequest)
 	res.Write([]byte(`{"error", true, "text": "` + text + `"}`))
-
-	return errors.New(text)
 }
 
 // SetTemplate sets template id for a key

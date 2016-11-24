@@ -33,21 +33,21 @@ type APIRequestStructCreateToken struct {
 // APIRouteTokenCreate is
 var APIRouteTokenCreate = Route{
 	"/token/create",
-	func(res http.ResponseWriter, req *http.Request) (error, interface{}) {
+	func(res http.ResponseWriter, req *http.Request) (interface{}, error) {
 		// Parse JSON request
 		var reqData APIRequestStructCreateToken
 		if err := checkJSONBody(req, res, &reqData); err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		// Get account
 		account, err := data.AccountByAddress(reqData.Address)
 		if err != nil {
-			return errors.New("Unknown account address"), nil
+			return nil, errors.New("Unknown account address")
 		}
 
 		if !account.IsVerified() {
-			return errors.New("Account not verified"), nil
+			return nil, errors.New("Account not verified")
 		}
 
 		token := data.TokenNew(account.ID(), data.TokenTypeAccess)
@@ -57,7 +57,7 @@ var APIRouteTokenCreate = Route{
 		_, err = sendTokenWithTemplate(reqData.Address, tokenRaw, conf.TemplateToken)
 		if err != nil {
 			token.Remove()
-			return errors.New("Unable to create token for account"), nil
+			return nil, errors.New("Unable to create token for account")
 		}
 
 		return nil, nil

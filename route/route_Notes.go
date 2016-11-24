@@ -41,32 +41,32 @@ type APIResponseStructNote struct {
 // APIRouteNotes is
 var APIRouteNotes = Route{
 	"/notes",
-	func(res http.ResponseWriter, req *http.Request) (error, interface{}) {
+	func(res http.ResponseWriter, req *http.Request) (interface{}, error) {
 		// Parse JSON request
 		var reqData APIRequestStructNotes
 		if err := checkJSONBody(req, res, &reqData); err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		// Get account
 		account, err := data.AccountByAddress(reqData.Address)
 		if err != nil {
-			return errors.New("Unknown account address"), nil
+			return nil, errors.New("Unknown account address")
 		}
 
 		if !account.IsVerified() {
-			return errors.New("Account not verified"), nil
+			return nil, errors.New("Account not verified")
 		}
 
 		// Check if account has requested token
 		_, err = account.GetToken(reqData.Token, data.TokenTypeAccess)
 		if err != nil {
-			return errors.New("Unable to use provided token"), nil
+			return nil, errors.New("Unable to use provided token")
 		}
 
 		list, err := data.NoteListByAccount(account.ID())
 		if err != nil {
-			return errors.New("Failed to get notes"), nil
+			return nil, errors.New("Failed to get notes")
 		}
 
 		var noteList []APIResponseStructNote
@@ -74,6 +74,6 @@ var APIRouteNotes = Route{
 			noteList = append(noteList, APIResponseStructNote{list[i].Text(), list[i].CreatedOn()})
 		}
 
-		return nil, noteList
+		return noteList, nil
 	},
 }

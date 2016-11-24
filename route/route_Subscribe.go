@@ -44,27 +44,27 @@ type APIRequestStructSubscribe struct {
 // APIRouteSubscribe is
 var APIRouteSubscribe = Route{
 	"/subscribe",
-	func(res http.ResponseWriter, req *http.Request) (error, interface{}) {
+	func(res http.ResponseWriter, req *http.Request) (interface{}, error) {
 		// Parse JSON request
 		var reqData APIRequestStructSubscribe
 		if err := checkJSONBody(req, res, &reqData); err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		// Get account
 		account, err := data.AccountByAddress(reqData.Address)
 		if err != nil {
-			return errors.New("Unknown account address"), nil
+			return nil, errors.New("Unknown account address")
 		}
 
 		if !account.IsVerified() {
-			return errors.New("Account not verified"), nil
+			return nil, errors.New("Account not verified")
 		}
 
 		// Check if account has requested token
 		_, err = account.GetToken(reqData.Token, data.TokenTypeAccess)
 		if err != nil {
-			return errors.New("Unable to use provided token"), nil
+			return nil, errors.New("Unable to use provided token")
 		}
 
 		stripe.Key = os.Getenv("STRIPE_API_KEY")
@@ -79,7 +79,7 @@ var APIRouteSubscribe = Route{
 		})
 
 		if err != nil {
-			return errors.New("Invalid card information"), nil
+			return nil, errors.New("Invalid card information")
 		}
 
 		customerParams := &stripe.CustomerParams{
@@ -89,7 +89,7 @@ var APIRouteSubscribe = Route{
 		c, err := stripeCustomer.New(customerParams)
 
 		if err != nil {
-			return errors.New("Invalid account information"), nil
+			return nil, errors.New("Invalid account information")
 		}
 
 		s, err := stripeSub.New(&stripe.SubParams{
@@ -98,7 +98,7 @@ var APIRouteSubscribe = Route{
 		})
 
 		if err != nil {
-			return errors.New("Invalid account information"), nil
+			return nil, errors.New("Invalid account information")
 		}
 
 		subscription := data.SubscriptionNew(account.ID(), s.ID)
@@ -106,7 +106,7 @@ var APIRouteSubscribe = Route{
 		subscription, err = subscription.Activate()
 
 		if err != nil {
-			return errors.New("Invalid account information"), nil
+			return nil, errors.New("Invalid account information")
 		}
 
 		return nil, nil

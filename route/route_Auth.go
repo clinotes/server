@@ -34,27 +34,27 @@ type APIRequestStructAuth struct {
 // APIRouteAuth is
 var APIRouteAuth = Route{
 	"/auth",
-	func(res http.ResponseWriter, req *http.Request) (error, interface{}) {
+	func(res http.ResponseWriter, req *http.Request) (interface{}, error) {
 		// Parse JSON request
 		var reqData APIRequestStructAuth
 		if err := checkJSONBody(req, res, &reqData); err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		// Get account
 		account, err := data.AccountByAddress(reqData.Address)
 		if err != nil {
-			return errors.New("Unknown account address"), nil
+			return nil, errors.New("Unknown account address")
 		}
 
 		if !account.IsVerified() {
-			return errors.New("Account not verified"), nil
+			return nil, errors.New("Account not verified")
 		}
 
 		// Check if account has requested token
 		_, err = account.GetToken(reqData.Token, data.TokenTypeAccess)
 		if err != nil {
-			return errors.New("Unable to use provided token"), nil
+			return nil, errors.New("Unable to use provided token")
 		}
 
 		return nil, nil
