@@ -21,11 +21,63 @@ package route
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/keighl/postmark"
 )
+
+// Handler is
+type Handler func(http.ResponseWriter, *http.Request) (interface{}, error)
+
+// APIResponseData is
+type apiResponseData struct {
+	Data  interface{}
+	Error bool `json:"error"`
+	Done  bool `json:"done"`
+}
+
+// APIResponseSuccess is a successful API response
+type apiResponseSuccess struct {
+	Error bool `json:"error"`
+	Done  bool `json:"done"`
+}
+
+// APIResponseError is an API error
+type apiResponseError struct {
+	Error bool   `json:"error"`
+	Text  string `json:"text"`
+}
+
+// Route is a route
+type Route struct {
+	URL     string
+	Handler Handler
+}
+
+func (handler Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Set JSON response header
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	// Prepare response object
+	var response interface{}
+
+	// Check for error in route handler
+	data, err := handler(w, r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		response = apiResponseError{true, err.Error()}
+	} else {
+		if data != nil {
+			response = apiResponseData{data, false, !false}
+		} else {
+			response = apiResponseSuccess{false, true}
+		}
+	}
+
+	// Write response
+	text, _ := json.Marshal(response)
+	w.Write([]byte(string(text)))
+}
 
 var (
 	conf      Configuration
@@ -42,45 +94,6 @@ type Configuration struct {
 	PostmarkToken   string
 	PostmarkFrom    string
 	PostmarkReplyTo string
-}
-
-// Route is a route
-type Route struct {
-	URL     string
-	Handler func(res http.ResponseWriter, req *http.Request)
-}
-
-// APIResponseData is
-type APIResponseData struct {
-	Data  interface{}
-	Error bool `json:"error"`
-	Done  bool `json:"done"`
-}
-
-func writeJSONResponse(res http.ResponseWriter) {
-	res.Write([]byte(`{"error": false, "done": true}`))
-}
-
-func writeJSONResponseData(res http.ResponseWriter, data interface{}) {
-	slcB, _ := json.Marshal(APIResponseData{data, false, !false})
-	res.Write([]byte(string(slcB)))
-}
-
-func writeJSONError(res http.ResponseWriter, text string) error {
-	res.WriteHeader(http.StatusBadRequest)
-	res.Write([]byte(`{"error", true, "text": "` + text + `"}`))
-
-	return errors.New(text)
-}
-
-// SetTemplate sets template id for a key
-func SetTemplate(key string, id int64) {
-	templates[key] = id
-}
-
-// GetTemplate gets template id for a key
-func GetTemplate(key string) int64 {
-	return templates[key]
 }
 
 // Routes returns available routes
@@ -100,10 +113,7 @@ func Routes(config Configuration) []Route {
 	}
 }
 
-func ensureJSONPayload(req *http.Request, res http.ResponseWriter, data interface{}) error {
-	// Set JSON response header
-	res.Header().Set("Content-Type", "application/json; charset=utf-8")
-
+func checkJSONBody(req *http.Request, res http.ResponseWriter, data interface{}) error {
 	// Decode body
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&data)
@@ -111,15 +121,13 @@ func ensureJSONPayload(req *http.Request, res http.ResponseWriter, data interfac
 
 	// Respond with BadRequest status
 	if err != nil {
-		return writeJSONError(res, "Invalid JSON data")
+		return errors.New("Invalid JSON data")
 	}
 
-	// Return nil if everything is fine
 	return nil
 }
 
 func sendTokenWithTemplate(to string, token string, template int64) (postmark.EmailResponse, error) {
-	fmt.Printf("Using %d for mail\n", template)
 	return pmark.SendTemplatedEmail(postmark.TemplatedEmail{
 		TemplateId: template,
 		TemplateModel: map[string]interface{}{

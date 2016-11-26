@@ -160,7 +160,7 @@ func init() {
 
 	// Configure path handlers
 	for _, r := range route.Routes(config) {
-		api.HandleFunc(r.URL, r.Handler).Methods("POST")
+		api.Handle(r.URL, route.Handler(r.Handler)).Methods("POST")
 	}
 
 	api.HandleFunc(

@@ -19,6 +19,7 @@
 package route
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/clinotes/server/data"
@@ -33,32 +34,29 @@ type APIRequestStructAuth struct {
 // APIRouteAuth is
 var APIRouteAuth = Route{
 	"/auth",
-	func(res http.ResponseWriter, req *http.Request) {
+	func(res http.ResponseWriter, req *http.Request) (interface{}, error) {
 		// Parse JSON request
 		var reqData APIRequestStructAuth
-		if ensureJSONPayload(req, res, &reqData) != nil {
-			return
+		if err := checkJSONBody(req, res, &reqData); err != nil {
+			return nil, err
 		}
 
 		// Get account
 		account, err := data.AccountByAddress(reqData.Address)
 		if err != nil {
-			writeJSONError(res, "Unknown account address")
-			return
+			return nil, errors.New("Unknown account address")
 		}
 
 		if !account.IsVerified() {
-			writeJSONError(res, "Account not verified")
-			return
+			return nil, errors.New("Account not verified")
 		}
 
 		// Check if account has requested token
 		_, err = account.GetToken(reqData.Token, data.TokenTypeAccess)
 		if err != nil {
-			writeJSONError(res, "Unable to use provided token")
-			return
+			return nil, errors.New("Unable to use provided token")
 		}
 
-		writeJSONResponse(res)
+		return nil, nil
 	},
 }

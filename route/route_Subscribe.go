@@ -19,6 +19,7 @@
 package route
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -43,30 +44,27 @@ type APIRequestStructSubscribe struct {
 // APIRouteSubscribe is
 var APIRouteSubscribe = Route{
 	"/subscribe",
-	func(res http.ResponseWriter, req *http.Request) {
+	func(res http.ResponseWriter, req *http.Request) (interface{}, error) {
 		// Parse JSON request
 		var reqData APIRequestStructSubscribe
-		if ensureJSONPayload(req, res, &reqData) != nil {
-			return
+		if err := checkJSONBody(req, res, &reqData); err != nil {
+			return nil, err
 		}
 
 		// Get account
 		account, err := data.AccountByAddress(reqData.Address)
 		if err != nil {
-			writeJSONError(res, "Unknown account address")
-			return
+			return nil, errors.New("Unknown account address")
 		}
 
 		if !account.IsVerified() {
-			writeJSONError(res, "Account not verified")
-			return
+			return nil, errors.New("Account not verified")
 		}
 
 		// Check if account has requested token
 		_, err = account.GetToken(reqData.Token, data.TokenTypeAccess)
 		if err != nil {
-			writeJSONError(res, "Unable to use provided token")
-			return
+			return nil, errors.New("Unable to use provided token")
 		}
 
 		stripe.Key = os.Getenv("STRIPE_API_KEY")
@@ -81,8 +79,7 @@ var APIRouteSubscribe = Route{
 		})
 
 		if err != nil {
-			writeJSONError(res, "Invalid card information")
-			return
+			return nil, errors.New("Invalid card information")
 		}
 
 		customerParams := &stripe.CustomerParams{
@@ -92,8 +89,7 @@ var APIRouteSubscribe = Route{
 		c, err := stripeCustomer.New(customerParams)
 
 		if err != nil {
-			writeJSONError(res, "Invalid account information")
-			return
+			return nil, errors.New("Invalid account information")
 		}
 
 		s, err := stripeSub.New(&stripe.SubParams{
@@ -102,8 +98,7 @@ var APIRouteSubscribe = Route{
 		})
 
 		if err != nil {
-			writeJSONError(res, "Invalid account information")
-			return
+			return nil, errors.New("Invalid account information")
 		}
 
 		subscription := data.SubscriptionNew(account.ID(), s.ID)
@@ -111,10 +106,9 @@ var APIRouteSubscribe = Route{
 		subscription, err = subscription.Activate()
 
 		if err != nil {
-			writeJSONError(res, "Invalid account information")
-			return
+			return nil, errors.New("Invalid account information")
 		}
 
-		writeJSONResponse(res)
+		return nil, nil
 	},
 }
