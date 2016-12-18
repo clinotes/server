@@ -27,25 +27,12 @@ import (
 
 var (
 	db      *sqlx.DB
-	pool    *pgx.ConnPool
 	letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-
-	// Queries holds the list of all needed sql queries
-	Queries = []map[string]string{
-		AccountQueries,
-		TokenQueries,
-		SubscriptionQueries,
-	}
 )
 
 // Database configures the db driver
 func Database(use *sqlx.DB) {
 	db = use
-}
-
-// Pool configures the PostgreSQL pool
-func Pool(use *pgx.ConnPool) {
-	pool = use
 }
 
 // Setup creates the database structure

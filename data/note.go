@@ -58,9 +58,10 @@ func NoteByID(id int) (*Note, error) {
 func NoteListByAccount(account int) ([]Note, error) {
 	var list []Note
 
-	err := db.Select(&list, "SELECT * FROM ("+
-		"  SELECT id, account, text, created FROM note WHERE account = $1 ORDER BY id DESC LIMIT 10"+
-		") as list ORDER BY id ASC", account)
+	err := db.Select(&list, `SELECT * FROM (
+		SELECT id, account, text, created FROM note
+		WHERE account = $1 ORDER BY id DESC LIMIT 10
+	) as list ORDER BY id ASC`, account)
 
 	return list, err
 }

@@ -71,6 +71,11 @@ func TestAccount(t *testing.T) {
 
 		assert.Equal(t, 0, len(acc.GetTokenList(TokenTypeAccess)))
 		assert.Equal(t, 0, len(acc.GetTokenList(TokenTypeMaintenace)))
+
+		tok, err := acc.GetToken("", TokenTypeAccess)
+
+		assert.Nil(t, tok)
+		assert.NotNil(t, err)
 	}
 
 	acc.Remove()

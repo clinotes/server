@@ -47,27 +47,6 @@ type Account struct {
 	Verified bool      `db:"verified"`
 }
 
-// AccountQueries has all queries for Account
-var AccountQueries = map[string]string{
-	"accountAdd": `
-		insert into account (address)
-		values($1)
-	`,
-	"accountRemove": `
-		delete FROM account WHERE id = $1
-	`,
-	"accountGetByAddress": `
-		SELECT id, address, created, verified FROM account WHERE address = $1
-	`,
-	"accountGetByID": `
-		SELECT id, address, created, verified FROM account WHERE id = $1
-	`,
-	"accountUpdate": `
-		UPDATE account SET verified = $2
-		WHERE id = $1
-	`,
-}
-
 // AccountNew creates a new account
 func AccountNew(address string) *Account {
 	return &Account{0, address, time.Now(), false}
@@ -75,12 +54,20 @@ func AccountNew(address string) *Account {
 
 // AccountByAddress retrieves Account by address
 func AccountByAddress(address string) (*Account, error) {
-	return accountByFieldAndValue("accountGetByAddress", address)
+	var account Account
+
+	err := db.Get(&account, "SELECT id, address, created, verified FROM account WHERE address = $1", address)
+
+	return &account, err
 }
 
 // AccountByID retrieves Account by id
 func AccountByID(id int) (*Account, error) {
-	return accountByFieldAndValue("accountGetByID", id)
+	var account Account
+
+	err := db.Get(&account, "SELECT id, address, created, verified FROM account WHERE id = $1", id)
+
+	return &account, err
 }
 
 // GetToken retrieves Token for Account
@@ -135,7 +122,7 @@ func (a Account) Refresh() (*Account, error) {
 
 // Remove Account
 func (a Account) Remove() error {
-	_, err := pool.Exec("accountRemove", a.ID)
+	_, err := db.Exec("delete FROM account WHERE id = $1", a.ID)
 
 	return err
 }
@@ -151,57 +138,32 @@ func (a Account) Store() (*Account, error) {
 
 // Verify verifies Account and updates the DB
 func (a Account) Verify() (*Account, error) {
-	_, err := pool.Exec("accountUpdate", a.ID, true)
+	a.Verified = true
 
-	if err != nil {
-		return nil, err
-	}
-
-	return AccountByID(a.ID)
+	return a.update()
 }
 
 func (a Account) create() (*Account, error) {
-	_, err := pool.Exec("accountAdd", a.Address)
-
-	if err == nil {
-		return AccountByAddress(a.Address)
-	}
-
-	return nil, err
-}
-
-func (a Account) update() (*Account, error) {
-	_, err := pool.Exec("accountUpdate", a.ID, a.Verified)
+	var id int
+	rows, err := db.Query("insert into account (address) values($1)", a.Address)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return AccountByID(a.ID)
+	rows.Next()
+	rows.Scan(&id)
+
+	return AccountByAddress(a.Address)
 }
 
-func accountFromResult(result interface {
-	Scan(...interface{}) (err error)
-}) (*Account, error) {
-	var accountID int
-	var accountAddress string
-	var accountCreated time.Time
-	var accountVerified bool
+func (a Account) update() (*Account, error) {
+	_, err := db.Query(`UPDATE account SET verified = $2
+		WHERE id = $1`, a.ID, a.Verified)
 
-	err := result.Scan(
-		&accountID,
-		&accountAddress,
-		&accountCreated,
-		&accountVerified,
-	)
-
-	if err == nil {
-		return &Account{accountID, accountAddress, accountCreated, accountVerified}, nil
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, errors.New("Failed to get subscription")
-}
-
-func accountByFieldAndValue(query string, value interface{}) (*Account, error) {
-	return accountFromResult(pool.QueryRow(query, value))
+	return &a, nil
 }

@@ -48,32 +48,7 @@ func prepareQueries(conn *pgx.Conn, list map[string]string) error {
 
 func TestMain(m *testing.M) {
 	db, _ = sqlx.Open("pgx", os.Getenv("DATABASE_URL"))
-
 	Database(db)
-
-	conn, _ := pgx.ParseURI(os.Getenv("DATABASE_URL"))
-	pool, _ = pgx.NewConnPool(pgx.ConnPoolConfig{
-		ConnConfig:     conn,
-		MaxConnections: 1,
-		AfterConnect: func(conn *pgx.Conn) error {
-			queryList := []map[string]string{
-				AccountQueries,
-				TokenQueries,
-				SubscriptionQueries,
-			}
-
-			for _, item := range queryList {
-				err := prepareQueries(conn, item)
-				if err != nil {
-					return err
-				}
-			}
-
-			return nil
-		},
-	})
-
-	Pool(pool)
 
 	flag.Parse()
 	os.Exit(m.Run())

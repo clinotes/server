@@ -41,16 +41,6 @@ type Subscription struct {
 	Active   bool      `db:"active"`
 }
 
-// SubscriptionQueries has all queries for Subscription
-var SubscriptionQueries = map[string]string{
-	"subscriptionGetByID": `
-		SELECT id, account, created, stripeid, active FROM subscription WHERE id = $1
-	`,
-	"subscriptionGetByAccountID": `
-		SELECT id, account, created, stripeid, active FROM subscription WHERE account = $1 AND active = TRUE
-	`,
-}
-
 // SubscriptionNew creates a new Subscription
 func SubscriptionNew(account int, stripeid string) *Subscription {
 	return &Subscription{0, account, time.Now(), stripeid, false}
