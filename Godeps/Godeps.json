@@ -55,6 +55,21 @@
 			"Rev": "3e77d0a1db3b3ddc7823331e51805669029c0990"
 		},
 		{
+			"ImportPath": "github.com/jackc/pgx/stdlib",
+			"Comment": "v2.9.0-55-g3e77d0a",
+			"Rev": "3e77d0a1db3b3ddc7823331e51805669029c0990"
+		},
+		{
+			"ImportPath": "github.com/jmoiron/sqlx",
+			"Comment": "sqlx-v1.1-101-gf9b4c7a",
+			"Rev": "f9b4c7a65e3ad108b5052f4c72fa96e2c2cb5955"
+		},
+		{
+			"ImportPath": "github.com/jmoiron/sqlx/reflectx",
+			"Comment": "sqlx-v1.1-101-gf9b4c7a",
+			"Rev": "f9b4c7a65e3ad108b5052f4c72fa96e2c2cb5955"
+		},
+		{
 			"ImportPath": "github.com/keighl/postmark",
 			"Rev": "6c4d0bbaf1b8ece6fcd3f05789bee84047e9eca7"
 		},

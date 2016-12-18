@@ -37,7 +37,6 @@ var (
 	version                = "0.0.6"
 	versionClientSupported = "0.2.0"
 
-	pool  *pgx.ConnPool
 	pmark *postmark.Client
 
 	maxDBConnections int
