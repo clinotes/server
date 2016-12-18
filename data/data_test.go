@@ -25,6 +25,9 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx"
+	_ "github.com/jackc/pgx/stdlib"
+
+	"github.com/jmoiron/sqlx"
 )
 
 func prepareQueries(conn *pgx.Conn, list map[string]string) error {
@@ -44,6 +47,10 @@ func prepareQueries(conn *pgx.Conn, list map[string]string) error {
 }
 
 func TestMain(m *testing.M) {
+	db, _ = sqlx.Open("pgx", os.Getenv("DATABASE_URL"))
+
+	Database(db)
+
 	conn, _ := pgx.ParseURI(os.Getenv("DATABASE_URL"))
 	pool, _ = pgx.NewConnPool(pgx.ConnPoolConfig{
 		ConnConfig:     conn,
@@ -53,7 +60,6 @@ func TestMain(m *testing.M) {
 				AccountQueries,
 				TokenQueries,
 				SubscriptionQueries,
-				NoteQueries,
 			}
 
 			for _, item := range queryList {

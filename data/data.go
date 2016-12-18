@@ -22,9 +22,11 @@ import (
 	"math/rand"
 
 	"github.com/jackc/pgx"
+	"github.com/jmoiron/sqlx"
 )
 
 var (
+	db      *sqlx.DB
 	pool    *pgx.ConnPool
 	letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
@@ -33,9 +35,13 @@ var (
 		AccountQueries,
 		TokenQueries,
 		SubscriptionQueries,
-		NoteQueries,
 	}
 )
+
+// Database configures the db driver
+func Database(use *sqlx.DB) {
+	db = use
+}
 
 // Pool configures the PostgreSQL pool
 func Pool(use *pgx.ConnPool) {
