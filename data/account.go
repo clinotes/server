@@ -27,7 +27,7 @@ import (
 type AccountInterface interface {
 	Address() string
 	CreatedOn() time.Time
-	GetSubscription() SubscriptionInterface
+	GetSubscription() *Subscription
 	GetToken(t string, tokenType int) (*Token, error)
 	GetTokenList(tokenType int) []*Token
 	HasSubscription() bool
@@ -122,7 +122,7 @@ func (a Account) GetTokenList(tokenType int) []*Token {
 }
 
 // GetSubscription retrieves Account Subscription
-func (a Account) GetSubscription() SubscriptionInterface {
+func (a Account) GetSubscription() *Subscription {
 	sub, err := SubscriptionByAccountID(a.ID())
 
 	if err == nil {

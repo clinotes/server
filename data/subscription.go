@@ -25,16 +25,11 @@ import (
 
 // SubscriptionInterface defines Subscription
 type SubscriptionInterface interface {
-	Account() int
-	Activate() (SubscriptionInterface, error)
-	CreatedOn() time.Time
-	Deactivate() (SubscriptionInterface, error)
-	ID() int
-	IsActive() bool
+	Activate() (*Subscription, error)
+	Deactivate() (*Subscription, error)
 	IsStored() bool
 	Refresh() (*Subscription, error)
-	Store() (SubscriptionInterface, error)
-	StripeID() string
+	Store() (*Subscription, error)
 
 	create() (SubscriptionInterface, error)
 	update() (SubscriptionInterface, error)
@@ -42,11 +37,11 @@ type SubscriptionInterface interface {
 
 // Subscription implements SubscriptionInterface
 type Subscription struct {
-	id       int
-	account  int
-	created  time.Time
-	stripeid string
-	active   bool
+	ID       int       `db:"id"`
+	Account  int       `db:"account"`
+	Created  time.Time `db:"created"`
+	StripeID string    `db:"stripeid"`
+	Active   bool      `db:"active"`
 }
 
 // SubscriptionQueries has all queries for Subscription
@@ -69,7 +64,7 @@ var SubscriptionQueries = map[string]string{
 }
 
 // SubscriptionNew creates a new Subscription
-func SubscriptionNew(account int, stripeid string) SubscriptionInterface {
+func SubscriptionNew(account int, stripeid string) *Subscription {
 	return &Subscription{0, account, time.Now(), stripeid, false}
 }
 
@@ -83,63 +78,38 @@ func SubscriptionByAccountID(id int) (*Subscription, error) {
 	return subscriptionByFieldAndValue("subscriptionGetByAccountID", id)
 }
 
-// Account returns Subscription account
-func (s Subscription) Account() int {
-	return s.account
-}
-
 // Activate activates Subscripiton and updates the DB
-func (s Subscription) Activate() (SubscriptionInterface, error) {
-	if s.IsActive() {
-		return s, nil
+func (s Subscription) Activate() (*Subscription, error) {
+	if s.Active {
+		return &s, nil
 	}
 
-	s.active = true
+	s.Active = true
 	return s.Store()
-}
-
-// CreatedOn returns Subscription create date
-func (s Subscription) CreatedOn() time.Time {
-	return s.created
 }
 
 // Deactivate deactivates Subscrition and updates the DB
-func (s Subscription) Deactivate() (SubscriptionInterface, error) {
-	if !s.IsActive() {
-		return s, nil
+func (s Subscription) Deactivate() (*Subscription, error) {
+	if !s.Active {
+		return &s, nil
 	}
 
-	s.active = false
+	s.Active = false
 	return s.Store()
-}
-
-// ID returns Subscription id
-func (s Subscription) ID() int {
-	return s.id
-}
-
-// IsActive checks if Subscription is active
-func (s Subscription) IsActive() bool {
-	return s.active
 }
 
 // IsStored checks if Subscription is stored in DB
 func (s Subscription) IsStored() bool {
-	return s.ID() != 0
+	return s.ID != 0
 }
 
 // Refresh Subscription from DB
 func (s Subscription) Refresh() (*Subscription, error) {
-	return SubscriptionByID(s.ID())
-}
-
-// StripeID returns Subscription stripeid
-func (s Subscription) StripeID() string {
-	return s.stripeid
+	return SubscriptionByID(s.ID)
 }
 
 // Store writes Subscription to DB
-func (s Subscription) Store() (SubscriptionInterface, error) {
+func (s Subscription) Store() (*Subscription, error) {
 	if s.IsStored() {
 		return s.update()
 	}
@@ -147,9 +117,9 @@ func (s Subscription) Store() (SubscriptionInterface, error) {
 	return s.create()
 }
 
-func (s Subscription) create() (SubscriptionInterface, error) {
+func (s Subscription) create() (*Subscription, error) {
 	var subscriptionID int
-	err := pool.QueryRow("subscriptionAdd", s.Account(), s.StripeID()).Scan(&subscriptionID)
+	err := pool.QueryRow("subscriptionAdd", s.Account, s.StripeID).Scan(&subscriptionID)
 
 	if err == nil {
 		return SubscriptionByID(subscriptionID)
@@ -158,8 +128,8 @@ func (s Subscription) create() (SubscriptionInterface, error) {
 	return nil, err
 }
 
-func (s Subscription) update() (SubscriptionInterface, error) {
-	_, err := pool.Exec("subscriptionUpdate", s.ID(), s.IsActive())
+func (s Subscription) update() (*Subscription, error) {
+	_, err := pool.Exec("subscriptionUpdate", s.ID, s.Active)
 
 	if err == nil {
 		return s.Refresh()
