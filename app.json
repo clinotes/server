@@ -7,7 +7,23 @@
     },
     "POSTMARK_API_KEY": {
       "required": true
+    },
+    "POSTMARK_FROM": {
+      "required": true
+    },
+    "POSTMARK_REPLY_TO": {
+      "required": true
+    },
+    "POSTMARK_TEMPLATE_CONFIRM": {
+      "required": true
+    },
+    "POSTMARK_TEMPLATE_TOKEN": {
+      "required": true
+    },
+    "POSTMARK_TEMPLATE_WELCOME": {
+      "required": true
     }
+
   },
   "formation": {
     "web": {
