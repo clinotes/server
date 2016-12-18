@@ -34,7 +34,6 @@ const (
 
 // TokenInterface defines Token
 type TokenInterface interface {
-	Account() int
 	Activate() (Token, error)
 	Deactivate() (Token, error)
 	IsSecure() bool
@@ -46,12 +45,12 @@ type TokenInterface interface {
 
 // Token implements TokenInterface
 type Token struct {
-	ID      int `db:"id"`
-	account int
+	ID      int       `db:"id"`
+	Account int       `db:"account"`
 	Text    string    `db:"text"`
 	Created time.Time `db:"created"`
-	Type    int
-	Active  bool `db:"active"`
+	Type    int       `db:"type"`
+	Active  bool      `db:"active"`
 	raw     string
 }
 
@@ -113,11 +112,6 @@ func TokenListByAccountAndType(account int, tType int) []*Token {
 	}
 
 	return list
-}
-
-// Account return Token account
-func (t Token) Account() int {
-	return t.account
 }
 
 // Activate activates Token and updates the DB
@@ -189,7 +183,7 @@ func (t Token) Store() (*Token, error) {
 
 func (t Token) create() (*Token, error) {
 	var tokenID int
-	err := pool.QueryRow("tokenAdd", t.Account(), t.Text, t.Type, t.Active).Scan(&tokenID)
+	err := pool.QueryRow("tokenAdd", t.Account, t.Text, t.Type, t.Active).Scan(&tokenID)
 
 	if err == nil {
 		return TokenByID(tokenID)
