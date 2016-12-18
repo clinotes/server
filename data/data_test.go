@@ -20,35 +20,18 @@ package data
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"testing"
 
-	"github.com/jackc/pgx"
 	_ "github.com/jackc/pgx/stdlib"
 
 	"github.com/jmoiron/sqlx"
 )
 
-func prepareQueries(conn *pgx.Conn, list map[string]string) error {
-	Setup(conn)
-
-	for name, query := range list {
-		fmt.Println("Register query:", name)
-		_, err := conn.Prepare(name, query)
-
-		if err != nil {
-			fmt.Println("Failed to prepare query.", err)
-			return err
-		}
-	}
-
-	return nil
-}
-
 func TestMain(m *testing.M) {
 	db, _ = sqlx.Open("pgx", os.Getenv("DATABASE_URL"))
 	Database(db)
+	Setup()
 
 	flag.Parse()
 	os.Exit(m.Run())

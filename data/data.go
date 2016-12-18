@@ -21,7 +21,6 @@ package data
 import (
 	"math/rand"
 
-	"github.com/jackc/pgx"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -36,8 +35,8 @@ func Database(use *sqlx.DB) {
 }
 
 // Setup creates the database structure
-func Setup(pool *pgx.Conn) {
-	pool.Exec(`
+func Setup() {
+	db.Exec(`
 		CREATE TABLE account(
 	    id serial primary key,
 	    address TEXT NOT NULL,

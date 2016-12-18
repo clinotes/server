@@ -114,6 +114,7 @@ func init() {
 	}
 
 	data.Database(db)
+	data.Setup()
 
 	// Create mux router
 	router = mux.NewRouter()
