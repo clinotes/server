@@ -35,23 +35,22 @@ const (
 // TokenInterface defines Token
 type TokenInterface interface {
 	Account() int
-	Activate() (TokenInterface, error)
+	Activate() (Token, error)
 	CreatedOn() time.Time
-	Deactivate() (TokenInterface, error)
-	ID() int
+	Deactivate() (Token, error)
 	IsActive() bool
 	IsSecure() bool
 	Matches(raw string) bool
 	Raw() string
 	Remove() error
-	Store() (TokenInterface, error)
+	Store() (Token, error)
 	Text() string
 	Type() int
 }
 
 // Token implements TokenInterface
 type Token struct {
-	id        int
+	ID        int
 	account   int
 	text      string
 	created   time.Time
@@ -86,7 +85,7 @@ var TokenQueries = map[string]string{
 }
 
 // TokenNew creates a new Token
-func TokenNew(account int, tokenType int) TokenInterface {
+func TokenNew(account int, tokenType int) *Token {
 	token := random(32)
 	hashed, _ := passlib.Hash(token)
 
@@ -99,8 +98,8 @@ func TokenByID(id int) (*Token, error) {
 }
 
 // TokenListByAccountAndType retrieves Token list by Account and type
-func TokenListByAccountAndType(account int, tType int) []TokenInterface {
-	var list []TokenInterface
+func TokenListByAccountAndType(account int, tType int) []*Token {
+	var list []*Token
 
 	rows, err := pool.Query("tokenGetAllByAccountAndType", account, tType)
 	defer rows.Close()
@@ -126,9 +125,9 @@ func (t Token) Account() int {
 }
 
 // Activate activates Token and updates the DB
-func (t Token) Activate() (TokenInterface, error) {
+func (t Token) Activate() (*Token, error) {
 	if t.IsActive() {
-		return t, nil
+		return &t, nil
 	}
 
 	t.active = true
@@ -141,18 +140,13 @@ func (t Token) CreatedOn() time.Time {
 }
 
 // Deactivate activates Token and updates the DB
-func (t Token) Deactivate() (TokenInterface, error) {
+func (t Token) Deactivate() (*Token, error) {
 	if !t.IsActive() {
-		return t, nil
+		return &t, nil
 	}
 
 	t.active = false
 	return t.Store()
-}
-
-// ID returns Token id
-func (t Token) ID() int {
-	return t.id
 }
 
 // IsActive checks if Token is active
@@ -167,7 +161,7 @@ func (t Token) IsSecure() bool {
 
 // IsStored check if Token is stored in DB
 func (t Token) IsStored() bool {
-	return t.ID() != 0
+	return t.ID != 0
 }
 
 // Matches checks if text matches Token
@@ -188,18 +182,18 @@ func (t Token) Raw() string {
 
 // Refresh Token from DB
 func (t Token) Refresh() (*Token, error) {
-	return TokenByID(t.ID())
+	return TokenByID(t.ID)
 }
 
 // Remove Token
 func (t Token) Remove() error {
-	_, err := pool.Exec("tokenRemove", t.ID())
+	_, err := pool.Exec("tokenRemove", t.ID)
 
 	return err
 }
 
 // Store writes Token to DB
-func (t Token) Store() (TokenInterface, error) {
+func (t Token) Store() (*Token, error) {
 	if t.IsStored() {
 		return t.update()
 	}
@@ -217,7 +211,7 @@ func (t Token) Type() int {
 	return t.tokenType
 }
 
-func (t Token) create() (TokenInterface, error) {
+func (t Token) create() (*Token, error) {
 	var tokenID int
 	err := pool.QueryRow("tokenAdd", t.Account(), t.Text(), t.Type(), t.IsActive()).Scan(&tokenID)
 
@@ -228,8 +222,8 @@ func (t Token) create() (TokenInterface, error) {
 	return nil, err
 }
 
-func (t Token) update() (TokenInterface, error) {
-	_, err := pool.Exec("tokenUpdate", t.ID(), t.Text(), t.IsActive())
+func (t Token) update() (*Token, error) {
+	_, err := pool.Exec("tokenUpdate", t.ID, t.Text(), t.IsActive())
 
 	if err == nil {
 		return t.Refresh()

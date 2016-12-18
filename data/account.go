@@ -28,8 +28,8 @@ type AccountInterface interface {
 	Address() string
 	CreatedOn() time.Time
 	GetSubscription() SubscriptionInterface
-	GetToken(t string, tokenType int) (TokenInterface, error)
-	GetTokenList(tokenType int) []TokenInterface
+	GetToken(t string, tokenType int) (*Token, error)
+	GetTokenList(tokenType int) []*Token
 	HasSubscription() bool
 	ID() int
 	IsStored() bool
@@ -98,8 +98,8 @@ func (a Account) CreatedOn() time.Time {
 }
 
 // GetToken retrieves Token for Account
-func (a Account) GetToken(t string, tokenType int) (TokenInterface, error) {
-	var token TokenInterface
+func (a Account) GetToken(t string, tokenType int) (*Token, error) {
+	token := &Token{}
 	found := false
 
 	for _, item := range a.GetTokenList(tokenType) {
@@ -117,7 +117,7 @@ func (a Account) GetToken(t string, tokenType int) (TokenInterface, error) {
 }
 
 // GetTokenList retrieves all Token for Account
-func (a Account) GetTokenList(tokenType int) []TokenInterface {
+func (a Account) GetTokenList(tokenType int) []*Token {
 	return TokenListByAccountAndType(a.ID(), tokenType)
 }
 

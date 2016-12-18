@@ -34,7 +34,7 @@ func TestToken(t *testing.T) {
 	assert.False(t, token.IsSecure())
 	assert.True(t, token.Matches(token.Raw()))
 	assert.False(t, token.Matches("test"+token.Raw()))
-	assert.Equal(t, token.ID(), 0)
+	assert.Equal(t, token.ID, 0)
 	assert.Equal(t, token.Type(), TokenTypeMaintenace)
 	assert.NotNil(t, token.Text())
 	assert.True(t, token.IsActive())
@@ -44,7 +44,7 @@ func TestToken(t *testing.T) {
 	if assert.Nil(t, err) {
 		assert.Equal(t, "", token.Raw())
 		assert.True(t, token.IsSecure())
-		assert.NotEqual(t, 0, token.ID())
+		assert.NotEqual(t, 0, token.ID)
 		assert.NotEqual(t, 0, token.CreatedOn())
 	}
 
@@ -83,19 +83,19 @@ func TestTokenList(t *testing.T) {
 	token, err = token.Store()
 
 	assert.Nil(t, err)
-	assert.NotNil(t, token.ID())
+	assert.NotNil(t, token.ID)
 
 	token2 := TokenNew(user.ID(), TokenTypeMaintenace)
 	token2, err = token2.Store()
 
 	assert.Nil(t, err)
-	assert.NotNil(t, token2.ID())
+	assert.NotNil(t, token2.ID)
 
 	token3 := TokenNew(user.ID(), TokenTypeAccess)
 	token3, err = token3.Store()
 
 	assert.Nil(t, err)
-	assert.NotNil(t, token3.ID())
+	assert.NotNil(t, token3.ID)
 
 	listMaintenance := TokenListByAccountAndType(user.ID(), TokenTypeMaintenace)
 	assert.Equal(t, 2, len(listMaintenance))
