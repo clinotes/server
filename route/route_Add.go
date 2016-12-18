@@ -48,7 +48,7 @@ var APIRouteAdd = Route{
 			return nil, errors.New("Unknown account address")
 		}
 
-		if !account.IsVerified() {
+		if !account.Verified {
 			return nil, errors.New("Account not verified")
 		}
 
@@ -58,7 +58,7 @@ var APIRouteAdd = Route{
 			return nil, errors.New("Unable to use provided token")
 		}
 
-		note := data.NoteNew(account.ID(), reqData.Note)
+		note := data.NoteNew(account.ID, reqData.Note)
 		note, err = note.Store()
 
 		if err != nil {

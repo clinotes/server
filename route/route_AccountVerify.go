@@ -59,7 +59,7 @@ var APIRouteAccountVerify = Route{
 			return nil, errors.New("Unable to use provided token")
 		}
 
-		_, err = sendTokenWithTemplate(account.Address(), reqData.Token, conf.TemplateConfirm)
+		_, err = sendTokenWithTemplate(account.Address, reqData.Token, conf.TemplateConfirm)
 		if err != nil {
 			return nil, errors.New("Unable to send verification mail")
 		}

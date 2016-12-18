@@ -54,7 +54,7 @@ var APIRouteNotes = Route{
 			return nil, errors.New("Unknown account address")
 		}
 
-		if !account.IsVerified() {
+		if !account.Verified {
 			return nil, errors.New("Account not verified")
 		}
 
@@ -64,14 +64,14 @@ var APIRouteNotes = Route{
 			return nil, errors.New("Unable to use provided token")
 		}
 
-		list, err := data.NoteListByAccount(account.ID())
+		list, err := data.NoteListByAccount(account.ID)
 		if err != nil {
 			return nil, errors.New("Failed to get notes")
 		}
 
 		var noteList []APIResponseStructNote
 		for i := 0; i < len(list); i++ {
-			noteList = append(noteList, APIResponseStructNote{list[i].Text(), list[i].CreatedOn()})
+			noteList = append(noteList, APIResponseStructNote{list[i].Text, list[i].Created})
 		}
 
 		return noteList, nil
