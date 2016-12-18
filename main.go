@@ -27,6 +27,8 @@ import (
 	"github.com/clinotes/server/route"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx"
+	_ "github.com/jackc/pgx/stdlib"
+	"github.com/jmoiron/sqlx"
 	"github.com/keighl/postmark"
 	"github.com/spf13/viper"
 )
@@ -35,7 +37,6 @@ var (
 	version                = "0.0.6"
 	versionClientSupported = "0.2.0"
 
-	pool  *pgx.ConnPool
 	pmark *postmark.Client
 
 	maxDBConnections int
@@ -58,7 +59,6 @@ func readEnvironment() {
 	viper.AutomaticEnv()
 	viper.ReadInConfig()
 
-	maxDBConnections = viper.GetInt("MAX_DB_CONNECTIONS")
 	connectionURL = viper.GetString("DATABASE_URL")
 	postmarkAPIToken = viper.GetString("POSTMARK_API_KEY")
 
@@ -70,11 +70,6 @@ func readEnvironment() {
 }
 
 func checkEnvironment() {
-	if maxDBConnections <= 0 {
-		fmt.Println("Please set MAX_DB_CONNECTIONS > 0")
-		os.Exit(1)
-	}
-
 	if postmarkTemplateIDWelcome <= 0 {
 		fmt.Println("Please set POSTMARK_TEMPLATE_WELCOME > 0")
 		os.Exit(1)
@@ -106,44 +101,20 @@ func checkEnvironment() {
 	}
 }
 
-func connect() *pgx.ConnPool {
-	conn, err := pgx.ParseURI(connectionURL)
-	if err != nil {
-		fmt.Println("Invalid DATABASE_URL format", err)
-		os.Exit(1)
-	}
-
-	// Create connection pool
-	pool, err = pgx.NewConnPool(pgx.ConnPoolConfig{
-		ConnConfig:     conn,
-		MaxConnections: maxDBConnections,
-		AfterConnect: func(conn *pgx.Conn) error {
-			data.Setup(conn)
-
-			for _, item := range data.Queries {
-				if queryError := prepareQueries(conn, item); queryError != nil {
-					return queryError
-				}
-			}
-
-			return nil
-		},
-	})
-
-	if err != nil {
-		fmt.Println("Unable to create connection pool", err)
-		os.Exit(1)
-	}
-
-	return pool
-}
-
 func init() {
 	readEnvironment()
 	checkEnvironment()
 
 	// Connect to data pool
-	data.Pool(connect())
+	db, err := sqlx.Open("pgx", os.Getenv("DATABASE_URL"))
+
+	if err != nil {
+		fmt.Println("Unable to connect to database", err)
+		os.Exit(1)
+	}
+
+	data.Database(db)
+	data.Setup()
 
 	// Create mux router
 	router = mux.NewRouter()

@@ -18,23 +18,15 @@
 
 package data
 
-import (
-	"errors"
-	"time"
-)
+import "time"
 
 // SubscriptionInterface defines Subscription
 type SubscriptionInterface interface {
-	Account() int
-	Activate() (SubscriptionInterface, error)
-	CreatedOn() time.Time
-	Deactivate() (SubscriptionInterface, error)
-	ID() int
-	IsActive() bool
+	Activate() (*Subscription, error)
+	Deactivate() (*Subscription, error)
 	IsStored() bool
 	Refresh() (*Subscription, error)
-	Store() (SubscriptionInterface, error)
-	StripeID() string
+	Store() (*Subscription, error)
 
 	create() (SubscriptionInterface, error)
 	update() (SubscriptionInterface, error)
@@ -42,104 +34,69 @@ type SubscriptionInterface interface {
 
 // Subscription implements SubscriptionInterface
 type Subscription struct {
-	id       int
-	account  int
-	created  time.Time
-	stripeid string
-	active   bool
-}
-
-// SubscriptionQueries has all queries for Subscription
-var SubscriptionQueries = map[string]string{
-	"subscriptionAdd": `
-		insert into subscription (account, stripeid)
-		values($1, $2)
-		RETURNING id
-	`,
-	"subscriptionUpdate": `
-		UPDATE subscription SET active = $2
-		WHERE id = $1
-	`,
-	"subscriptionGetByID": `
-		SELECT id, account, created, stripeid, active FROM subscription WHERE id = $1
-	`,
-	"subscriptionGetByAccountID": `
-		SELECT id, account, created, stripeid, active FROM subscription WHERE account = $1 AND active = TRUE
-	`,
+	ID       int       `db:"id"`
+	Account  int       `db:"account"`
+	Created  time.Time `db:"created"`
+	StripeID string    `db:"stripeid"`
+	Active   bool      `db:"active"`
 }
 
 // SubscriptionNew creates a new Subscription
-func SubscriptionNew(account int, stripeid string) SubscriptionInterface {
+func SubscriptionNew(account int, stripeid string) *Subscription {
 	return &Subscription{0, account, time.Now(), stripeid, false}
 }
 
 // SubscriptionByID retrieves Subscription by id
 func SubscriptionByID(id int) (*Subscription, error) {
-	return subscriptionByFieldAndValue("subscriptionGetByID", id)
+	var sub Subscription
+
+	err := db.Get(&sub, "SELECT id, account, created, stripeid, active FROM subscription WHERE id = $1", id)
+
+	return &sub, err
 }
 
 // SubscriptionByAccountID retrieves Subscription by Account id
 func SubscriptionByAccountID(id int) (*Subscription, error) {
-	return subscriptionByFieldAndValue("subscriptionGetByAccountID", id)
-}
+	var sub Subscription
 
-// Account returns Subscription account
-func (s Subscription) Account() int {
-	return s.account
+	err := db.Select(&sub, `SELECT id, account, created, stripeid, active
+		FROM subscription WHERE account = $1 AND active = TRUE`, id)
+
+	return &sub, err
 }
 
 // Activate activates Subscripiton and updates the DB
-func (s Subscription) Activate() (SubscriptionInterface, error) {
-	if s.IsActive() {
-		return s, nil
+func (s Subscription) Activate() (*Subscription, error) {
+	if s.Active {
+		return &s, nil
 	}
 
-	s.active = true
+	s.Active = true
 	return s.Store()
-}
-
-// CreatedOn returns Subscription create date
-func (s Subscription) CreatedOn() time.Time {
-	return s.created
 }
 
 // Deactivate deactivates Subscrition and updates the DB
-func (s Subscription) Deactivate() (SubscriptionInterface, error) {
-	if !s.IsActive() {
-		return s, nil
+func (s Subscription) Deactivate() (*Subscription, error) {
+	if !s.Active {
+		return &s, nil
 	}
 
-	s.active = false
+	s.Active = false
 	return s.Store()
-}
-
-// ID returns Subscription id
-func (s Subscription) ID() int {
-	return s.id
-}
-
-// IsActive checks if Subscription is active
-func (s Subscription) IsActive() bool {
-	return s.active
 }
 
 // IsStored checks if Subscription is stored in DB
 func (s Subscription) IsStored() bool {
-	return s.ID() != 0
+	return s.ID != 0
 }
 
 // Refresh Subscription from DB
 func (s Subscription) Refresh() (*Subscription, error) {
-	return SubscriptionByID(s.ID())
-}
-
-// StripeID returns Subscription stripeid
-func (s Subscription) StripeID() string {
-	return s.stripeid
+	return SubscriptionByID(s.ID)
 }
 
 // Store writes Subscription to DB
-func (s Subscription) Store() (SubscriptionInterface, error) {
+func (s Subscription) Store() (*Subscription, error) {
 	if s.IsStored() {
 		return s.update()
 	}
@@ -147,51 +104,31 @@ func (s Subscription) Store() (SubscriptionInterface, error) {
 	return s.create()
 }
 
-func (s Subscription) create() (SubscriptionInterface, error) {
-	var subscriptionID int
-	err := pool.QueryRow("subscriptionAdd", s.Account(), s.StripeID()).Scan(&subscriptionID)
+func (s Subscription) create() (*Subscription, error) {
+	var id int
+	rows, err := db.Query(`
+		insert into subscription (account, stripeid)
+		values($1, $2)
+		RETURNING id
+	`, s.Account, s.StripeID)
 
-	if err == nil {
-		return SubscriptionByID(subscriptionID)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, err
+	rows.Next()
+	rows.Scan(&id)
+
+	return SubscriptionByID(id)
 }
 
-func (s Subscription) update() (SubscriptionInterface, error) {
-	_, err := pool.Exec("subscriptionUpdate", s.ID(), s.IsActive())
+func (s Subscription) update() (*Subscription, error) {
+	_, err := db.Query(`UPDATE subscription SET active = $2
+		WHERE id = $1`, s.ID, s.Active)
 
-	if err == nil {
-		return s.Refresh()
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, err
-}
-
-func subscriptionFromResult(result interface {
-	Scan(...interface{}) (err error)
-}) (*Subscription, error) {
-	var subscriptionID int
-	var subscriptionAccount int
-	var subscriptionCreated time.Time
-	var subscriptionStripeID string
-	var subscriptionActive bool
-
-	err := result.Scan(
-		&subscriptionID,
-		&subscriptionAccount,
-		&subscriptionCreated,
-		&subscriptionStripeID,
-		&subscriptionActive,
-	)
-
-	if err == nil {
-		return &Subscription{subscriptionID, subscriptionAccount, subscriptionCreated, subscriptionStripeID, subscriptionActive}, nil
-	}
-
-	return nil, errors.New("Failed to get subscription")
-}
-
-func subscriptionByFieldAndValue(query string, value interface{}) (*Subscription, error) {
-	return subscriptionFromResult(pool.QueryRow(query, value))
+	return &s, nil
 }

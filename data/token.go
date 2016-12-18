@@ -19,7 +19,6 @@
 package data
 
 import (
-	"errors"
 	"time"
 
 	"gopkg.in/hlandau/passlib.v1"
@@ -34,59 +33,28 @@ const (
 
 // TokenInterface defines Token
 type TokenInterface interface {
-	Account() int
-	Activate() (TokenInterface, error)
-	CreatedOn() time.Time
-	Deactivate() (TokenInterface, error)
-	ID() int
-	IsActive() bool
+	Activate() (Token, error)
+	Deactivate() (Token, error)
 	IsSecure() bool
 	Matches(raw string) bool
 	Raw() string
 	Remove() error
-	Store() (TokenInterface, error)
-	Text() string
-	Type() int
+	Store() (Token, error)
 }
 
 // Token implements TokenInterface
 type Token struct {
-	id        int
-	account   int
-	text      string
-	created   time.Time
-	tokenType int
-	active    bool
-	raw       string
-}
-
-// TokenQueries has all queries for Token
-var TokenQueries = map[string]string{
-	"tokenAdd": `
-		insert into token (account, text, type, active)
-		values($1, $2, $3, $4)
-		RETURNING id
-	`,
-	"tokenUpdate": `
-		UPDATE token SET text = $2, active = $3
-		WHERE id = $1
-	`,
-	"tokenRemove": `
-		delete FROM token WHERE id = $1
-	`,
-	"tokenGetAllByAccount": `
-		SELECT id, account, text, created, type, active FROM token WHERE account = $1
-	`,
-	"tokenGetAllByAccountAndType": `
-		SELECT id, account, text, created, type, active FROM token WHERE account = $1 AND type = $2
-	`,
-	"tokenGetByID": `
-		SELECT id, account, text, created, type, active FROM token WHERE id = $1
-	`,
+	ID      int       `db:"id"`
+	Account int       `db:"account"`
+	Text    string    `db:"text"`
+	Created time.Time `db:"created"`
+	Type    int       `db:"type"`
+	Active  bool      `db:"active"`
+	raw     string
 }
 
 // TokenNew creates a new Token
-func TokenNew(account int, tokenType int) TokenInterface {
+func TokenNew(account int, tokenType int) *Token {
 	token := random(32)
 	hashed, _ := passlib.Hash(token)
 
@@ -95,69 +63,41 @@ func TokenNew(account int, tokenType int) TokenInterface {
 
 // TokenByID retrieves Token by id
 func TokenByID(id int) (*Token, error) {
-	return tokenByFieldAndValue("tokenGetByID", id)
+	var token Token
+
+	err := db.Get(&token, "SELECT id, account, text, created, type, active FROM token WHERE id = $1", id)
+
+	return &token, err
 }
 
 // TokenListByAccountAndType retrieves Token list by Account and type
-func TokenListByAccountAndType(account int, tType int) []TokenInterface {
-	var list []TokenInterface
+func TokenListByAccountAndType(account int, tType int) []*Token {
+	var list []*Token
 
-	rows, err := pool.Query("tokenGetAllByAccountAndType", account, tType)
-	defer rows.Close()
-
-	if err != nil {
-		return list
-	}
-
-	for rows.Next() {
-		token, err := tokenFromResult(rows)
-
-		if err == nil {
-			list = append(list, token)
-		}
-	}
+	db.Select(&list, `SELECT id, account, text, created, type, active
+		FROM token WHERE account = $1 AND type = $2`, account, tType)
 
 	return list
 }
 
-// Account return Token account
-func (t Token) Account() int {
-	return t.account
-}
-
 // Activate activates Token and updates the DB
-func (t Token) Activate() (TokenInterface, error) {
-	if t.IsActive() {
-		return t, nil
+func (t Token) Activate() (*Token, error) {
+	if t.Active {
+		return &t, nil
 	}
 
-	t.active = true
+	t.Active = true
 	return t.Store()
-}
-
-// CreatedOn returns Token create date
-func (t Token) CreatedOn() time.Time {
-	return t.created
 }
 
 // Deactivate activates Token and updates the DB
-func (t Token) Deactivate() (TokenInterface, error) {
-	if !t.IsActive() {
-		return t, nil
+func (t Token) Deactivate() (*Token, error) {
+	if !t.Active {
+		return &t, nil
 	}
 
-	t.active = false
+	t.Active = false
 	return t.Store()
-}
-
-// ID returns Token id
-func (t Token) ID() int {
-	return t.id
-}
-
-// IsActive checks if Token is active
-func (t Token) IsActive() bool {
-	return t.active
 }
 
 // IsSecure checks Token is secure
@@ -167,12 +107,12 @@ func (t Token) IsSecure() bool {
 
 // IsStored check if Token is stored in DB
 func (t Token) IsStored() bool {
-	return t.ID() != 0
+	return t.ID != 0
 }
 
 // Matches checks if text matches Token
 func (t Token) Matches(raw string) bool {
-	_, err := passlib.Verify(raw, t.Text())
+	_, err := passlib.Verify(raw, t.Text)
 
 	if err == nil {
 		return true
@@ -186,20 +126,15 @@ func (t Token) Raw() string {
 	return t.raw
 }
 
-// Refresh Token from DB
-func (t Token) Refresh() (*Token, error) {
-	return TokenByID(t.ID())
-}
-
 // Remove Token
 func (t Token) Remove() error {
-	_, err := pool.Exec("tokenRemove", t.ID())
+	_, err := db.Exec("delete FROM token WHERE id = $1", t.ID)
 
 	return err
 }
 
 // Store writes Token to DB
-func (t Token) Store() (TokenInterface, error) {
+func (t Token) Store() (*Token, error) {
 	if t.IsStored() {
 		return t.update()
 	}
@@ -207,63 +142,31 @@ func (t Token) Store() (TokenInterface, error) {
 	return t.create()
 }
 
-// Text returns Token text
-func (t Token) Text() string {
-	return t.text
-}
+func (t Token) create() (*Token, error) {
+	var id int
+	rows, err := db.Query(`
+		insert into token (account, text, type, active)
+		values($1, $2, $3, $4)
+		RETURNING id
+	`, t.Account, t.Text, t.Type, t.Active)
 
-// Type returns Token type
-func (t Token) Type() int {
-	return t.tokenType
-}
-
-func (t Token) create() (TokenInterface, error) {
-	var tokenID int
-	err := pool.QueryRow("tokenAdd", t.Account(), t.Text(), t.Type(), t.IsActive()).Scan(&tokenID)
-
-	if err == nil {
-		return TokenByID(tokenID)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, err
+	rows.Next()
+	rows.Scan(&id)
+
+	return TokenByID(id)
 }
 
-func (t Token) update() (TokenInterface, error) {
-	_, err := pool.Exec("tokenUpdate", t.ID(), t.Text(), t.IsActive())
+func (t Token) update() (*Token, error) {
+	_, err := db.Query(`UPDATE token SET text = $2, active = $3
+		WHERE id = $1`, t.ID, t.Text, t.Active)
 
-	if err == nil {
-		return t.Refresh()
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, err
-}
-
-func tokenFromResult(result interface {
-	Scan(...interface{}) (err error)
-}) (*Token, error) {
-	var tokenID int
-	var tokenAccount int
-	var tokenText string
-	var tokenCreated time.Time
-	var tokenType int
-	var tokenActive bool
-
-	err := result.Scan(
-		&tokenID,
-		&tokenAccount,
-		&tokenText,
-		&tokenCreated,
-		&tokenType,
-		&tokenActive,
-	)
-
-	if err == nil {
-		return &Token{tokenID, tokenAccount, tokenText, tokenCreated, tokenType, tokenActive, ""}, nil
-	}
-
-	return nil, errors.New("Failed to get token")
-}
-
-func tokenByFieldAndValue(query string, value interface{}) (*Token, error) {
-	return tokenFromResult(pool.QueryRow(query, value))
+	return &t, nil
 }

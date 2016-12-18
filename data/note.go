@@ -25,89 +25,60 @@ import (
 
 // NoteInterface defines Note
 type NoteInterface interface {
-	Account() int
-	CreatedOn() time.Time
-	ID() int
 	IsStored() bool
-	Store() (NoteInterface, error)
-	Text() string
+	Store() (*Note, error)
 
-	create() (NoteInterface, error)
-	update() (NoteInterface, error)
+	create() (*Note, error)
+	update() (*Note, error)
 }
 
 // Note implements NoteInterface
 type Note struct {
-	id      int
-	account int
-	text    string
-	created time.Time
-}
-
-// NoteQueries has all queries for Note
-var NoteQueries = map[string]string{
-	"noteAdd": `
-		insert into note (account, text)
-		values($1, $2)
-		RETURNING id
-	`,
-	"noteUpdate": `
-		UPDATE note SET text = $2
-		WHERE id = $1
-	`,
-	"noteGetByID": `
-		SELECT id, account, text, created FROM note WHERE id = $1
-	`,
-	"noteListGetByAccount": `
-		SELECT * FROM (
-			SELECT id, account, text, created FROM note WHERE account = $1 ORDER BY id DESC LIMIT 10
-		) as list ORDER BY id ASC
-	`,
+	ID      int       `db:"id"`
+	Account int       `db:"account"`
+	Text    string    `db:"text"`
+	Created time.Time `db:"created"`
 }
 
 // NoteNew creates a new Note
-func NoteNew(account int, text string) NoteInterface {
-	return Note{0, account, text, time.Now()}
+func NoteNew(account int, text string) *Note {
+	return &Note{0, account, text, time.Now()}
 }
 
 // NoteByID retrieves Note by id
 func NoteByID(id int) (*Note, error) {
-	return noteByFieldAndValue("noteGetByID", id)
+	var note Note
+
+	err := db.Get(&note, "SELECT id, account, text, created FROM note WHERE id = $1", id)
+
+	return &note, err
 }
 
 // NoteListByAccount retrieves Note by id
 func NoteListByAccount(account int) ([]Note, error) {
-	return noteListByFieldAndValue("noteListGetByAccount", account)
-}
+	var list []Note
 
-// Account retrieves Note account
-func (n Note) Account() int {
-	return n.account
-}
+	err := db.Select(&list, `SELECT * FROM (
+		SELECT id, account, text, created FROM note
+		WHERE account = $1 ORDER BY id DESC LIMIT 10
+	) as list ORDER BY id ASC`, account)
 
-// CreatedOn returns Note create date
-func (n Note) CreatedOn() time.Time {
-	return n.created
-}
-
-// ID returns Account id
-func (n Note) ID() int {
-	return n.id
+	return list, err
 }
 
 // IsStored checks if Note is stored in DB
 func (n Note) IsStored() bool {
-	return n.ID() != 0
+	return n.ID != 0
 }
 
 // Refresh Note from DB
 func (n Note) Refresh() (*Note, error) {
-	return NoteByID(n.ID())
+	return NoteByID(n.ID)
 }
 
 // Store writes Notes to DB
-func (n Note) Store() (NoteInterface, error) {
-	if len(n.Text()) > 100 {
+func (n Note) Store() (*Note, error) {
+	if len(n.Text) > 100 {
 		return nil, errors.New("Note must not be longer than 100 characters")
 	}
 
@@ -118,93 +89,26 @@ func (n Note) Store() (NoteInterface, error) {
 	return n.create()
 }
 
-// Text returns Note text
-func (n Note) Text() string {
-	return n.text
-}
-
-func (n Note) create() (NoteInterface, error) {
-	var noteID int
-	err := pool.QueryRow("noteAdd", n.Account(), n.Text()).Scan(&noteID)
-
-	if err == nil {
-		return NoteByID(noteID)
-	}
-
-	return nil, err
-
-}
-
-func (n Note) update() (NoteInterface, error) {
-	_, err := pool.Exec("noteUpdate", n.ID(), n.Text())
-
-	if err == nil {
-		return n.Refresh()
-	}
-
-	return nil, err
-}
-
-func noteFromResult(result interface {
-	Scan(...interface{}) (err error)
-}) (*Note, error) {
-	var noteID int
-	var noteAccount int
-	var noteText string
-	var noteCreated time.Time
-
-	err := result.Scan(
-		&noteID,
-		&noteAccount,
-		&noteText,
-		&noteCreated,
-	)
-
-	if err == nil {
-		return &Note{noteID, noteAccount, noteText, noteCreated}, nil
-	}
-
-	return nil, errors.New("Failed to get token")
-}
-
-func noteListFromResult(result interface {
-	Next() bool
-	Scan(dest ...interface{}) (err error)
-}) ([]Note, error) {
-	var noteID int
-	var noteAccount int
-	var noteText string
-	var noteCreated time.Time
-	var list []Note
-
-	for result.Next() {
-		err := result.Scan(
-			&noteID,
-			&noteAccount,
-			&noteText,
-			&noteCreated,
-		)
-
-		if err != nil {
-			return nil, errors.New("Failed to get notes")
-		}
-
-		list = append(list, Note{noteID, noteAccount, noteText, noteCreated})
-	}
-
-	return list, nil
-}
-
-func noteListByFieldAndValue(query string, value interface{}) ([]Note, error) {
-	q, err := pool.Query(query, value)
+func (n Note) create() (*Note, error) {
+	var id int
+	rows, err := db.Query("insert into note (account, text) values($1, $2) RETURNING id", n.Account, n.Text)
 
 	if err != nil {
-		return nil, errors.New("Failed to get notes")
+		return nil, err
 	}
 
-	return noteListFromResult(q)
+	rows.Next()
+	rows.Scan(&id)
+
+	return NoteByID(id)
 }
 
-func noteByFieldAndValue(query string, value interface{}) (*Note, error) {
-	return noteFromResult(pool.QueryRow(query, value))
+func (n Note) update() (*Note, error) {
+	_, err := db.Query("UPDATE note SET text = $2 WHERE id = $1", n.Account, n.Text)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &n, nil
 }

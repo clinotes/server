@@ -47,7 +47,7 @@ var APIRouteAuth = Route{
 			return nil, errors.New("Unknown account address")
 		}
 
-		if !account.IsVerified() {
+		if !account.Verified {
 			return nil, errors.New("Account not verified")
 		}
 

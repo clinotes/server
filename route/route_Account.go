@@ -68,8 +68,8 @@ var APIRouteAccount = Route{
 		}
 
 		return APIResponseStructAccount{
-			account.Address(),
-			account.CreatedOn(),
+			account.Address,
+			account.Created,
 			account.HasSubscription(),
 		}, nil
 	},

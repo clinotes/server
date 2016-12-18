@@ -25,81 +25,54 @@ import (
 
 // AccountInterface defines Account
 type AccountInterface interface {
-	Address() string
-	CreatedOn() time.Time
-	GetSubscription() SubscriptionInterface
-	GetToken(t string, tokenType int) (TokenInterface, error)
-	GetTokenList(tokenType int) []TokenInterface
+	GetSubscription() *Subscription
+	GetToken(t string, tokenType int) (*Token, error)
+	GetTokenList(tokenType int) []*Token
 	HasSubscription() bool
-	ID() int
 	IsStored() bool
-	IsVerified() bool
 	Refresh() (*Account, error)
 	Remove() error
-	Store() (AccountInterface, error)
-	Verify() (AccountInterface, error)
+	Store() (*Account, error)
+	Verify() (*Account, error)
 
-	create() (AccountInterface, error)
-	update() (AccountInterface, error)
+	create() (*Account, error)
+	update() (*Account, error)
 }
 
 // Account implements AccountInterface
 type Account struct {
-	id       int
-	address  string
-	created  time.Time
-	verified bool
-}
-
-// AccountQueries has all queries for Account
-var AccountQueries = map[string]string{
-	"accountAdd": `
-		insert into account (address)
-		values($1)
-	`,
-	"accountRemove": `
-		delete FROM account WHERE id = $1
-	`,
-	"accountGetByAddress": `
-		SELECT id, address, created, verified FROM account WHERE address = $1
-	`,
-	"accountGetByID": `
-		SELECT id, address, created, verified FROM account WHERE id = $1
-	`,
-	"accountUpdate": `
-		UPDATE account SET verified = $2
-		WHERE id = $1
-	`,
+	ID       int       `db:"id"`
+	Address  string    `db:"address"`
+	Created  time.Time `db:"created"`
+	Verified bool      `db:"verified"`
 }
 
 // AccountNew creates a new account
-func AccountNew(address string) AccountInterface {
+func AccountNew(address string) *Account {
 	return &Account{0, address, time.Now(), false}
 }
 
 // AccountByAddress retrieves Account by address
-func AccountByAddress(address string) (AccountInterface, error) {
-	return accountByFieldAndValue("accountGetByAddress", address)
+func AccountByAddress(address string) (*Account, error) {
+	var account Account
+
+	err := db.Get(&account, "SELECT id, address, created, verified FROM account WHERE address = $1", address)
+
+	return &account, err
 }
 
 // AccountByID retrieves Account by id
 func AccountByID(id int) (*Account, error) {
-	return accountByFieldAndValue("accountGetByID", id)
-}
+	var account Account
 
-// Address returns Account address
-func (a Account) Address() string {
-	return a.address
-}
+	err := db.Get(&account, "SELECT id, address, created, verified FROM account WHERE id = $1", id)
 
-// CreatedOn returns Account create date
-func (a Account) CreatedOn() time.Time {
-	return a.created
+	return &account, err
 }
 
 // GetToken retrieves Token for Account
-func (a Account) GetToken(t string, tokenType int) (TokenInterface, error) {
-	var token TokenInterface
+func (a Account) GetToken(t string, tokenType int) (*Token, error) {
+	token := &Token{}
 	found := false
 
 	for _, item := range a.GetTokenList(tokenType) {
@@ -117,13 +90,13 @@ func (a Account) GetToken(t string, tokenType int) (TokenInterface, error) {
 }
 
 // GetTokenList retrieves all Token for Account
-func (a Account) GetTokenList(tokenType int) []TokenInterface {
-	return TokenListByAccountAndType(a.ID(), tokenType)
+func (a Account) GetTokenList(tokenType int) []*Token {
+	return TokenListByAccountAndType(a.ID, tokenType)
 }
 
 // GetSubscription retrieves Account Subscription
-func (a Account) GetSubscription() SubscriptionInterface {
-	sub, err := SubscriptionByAccountID(a.ID())
+func (a Account) GetSubscription() *Subscription {
+	sub, err := SubscriptionByAccountID(a.ID)
 
 	if err == nil {
 		return sub
@@ -137,35 +110,25 @@ func (a Account) HasSubscription() bool {
 	return a.GetSubscription() != nil
 }
 
-// ID returns Account id
-func (a Account) ID() int {
-	return a.id
-}
-
 // IsStored checks if Account is stored in DB
 func (a Account) IsStored() bool {
-	return a.ID() != 0
-}
-
-// IsVerified checks if Account is verified
-func (a Account) IsVerified() bool {
-	return a.verified
+	return a.ID != 0
 }
 
 // Refresh Account from DB
 func (a Account) Refresh() (*Account, error) {
-	return AccountByID(a.ID())
+	return AccountByID(a.ID)
 }
 
 // Remove Account
 func (a Account) Remove() error {
-	_, err := pool.Exec("accountRemove", a.ID())
+	_, err := db.Exec("delete FROM account WHERE id = $1", a.ID)
 
 	return err
 }
 
 // Store writes Account to DB
-func (a Account) Store() (AccountInterface, error) {
+func (a Account) Store() (*Account, error) {
 	if a.IsStored() {
 		return a.update()
 	}
@@ -174,58 +137,33 @@ func (a Account) Store() (AccountInterface, error) {
 }
 
 // Verify verifies Account and updates the DB
-func (a Account) Verify() (AccountInterface, error) {
-	_, err := pool.Exec("accountUpdate", a.ID(), true)
+func (a Account) Verify() (*Account, error) {
+	a.Verified = true
+
+	return a.update()
+}
+
+func (a Account) create() (*Account, error) {
+	var id int
+	rows, err := db.Query("insert into account (address) values($1)", a.Address)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return AccountByID(a.ID())
+	rows.Next()
+	rows.Scan(&id)
+
+	return AccountByAddress(a.Address)
 }
 
-func (a Account) create() (AccountInterface, error) {
-	_, err := pool.Exec("accountAdd", a.Address())
-
-	if err == nil {
-		return AccountByAddress(a.Address())
-	}
-
-	return nil, err
-}
-
-func (a Account) update() (AccountInterface, error) {
-	_, err := pool.Exec("accountUpdate", a.ID(), a.IsVerified())
+func (a Account) update() (*Account, error) {
+	_, err := db.Query(`UPDATE account SET verified = $2
+		WHERE id = $1`, a.ID, a.Verified)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return AccountByID(a.ID())
-}
-
-func accountFromResult(result interface {
-	Scan(...interface{}) (err error)
-}) (*Account, error) {
-	var accountID int
-	var accountAddress string
-	var accountCreated time.Time
-	var accountVerified bool
-
-	err := result.Scan(
-		&accountID,
-		&accountAddress,
-		&accountCreated,
-		&accountVerified,
-	)
-
-	if err == nil {
-		return &Account{accountID, accountAddress, accountCreated, accountVerified}, nil
-	}
-
-	return nil, errors.New("Failed to get subscription")
-}
-
-func accountByFieldAndValue(query string, value interface{}) (*Account, error) {
-	return accountFromResult(pool.QueryRow(query, value))
+	return &a, nil
 }

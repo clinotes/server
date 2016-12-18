@@ -57,7 +57,7 @@ var APIRouteSubscribe = Route{
 			return nil, errors.New("Unknown account address")
 		}
 
-		if !account.IsVerified() {
+		if !account.Verified {
 			return nil, errors.New("Account not verified")
 		}
 
@@ -83,7 +83,7 @@ var APIRouteSubscribe = Route{
 		}
 
 		customerParams := &stripe.CustomerParams{
-			Desc: fmt.Sprintf("%s (#%d)", account.Address(), account.ID()),
+			Desc: fmt.Sprintf("%s (#%d)", account.Address, account.ID),
 		}
 		customerParams.SetSource(t.ID)
 		c, err := stripeCustomer.New(customerParams)
@@ -101,7 +101,7 @@ var APIRouteSubscribe = Route{
 			return nil, errors.New("Invalid account information")
 		}
 
-		subscription := data.SubscriptionNew(account.ID(), s.ID)
+		subscription := data.SubscriptionNew(account.ID, s.ID)
 		subscription, err = subscription.Store()
 		subscription, err = subscription.Activate()
 

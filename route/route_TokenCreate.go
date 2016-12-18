@@ -46,11 +46,11 @@ var APIRouteTokenCreate = Route{
 			return nil, errors.New("Unknown account address")
 		}
 
-		if !account.IsVerified() {
+		if !account.Verified {
 			return nil, errors.New("Account not verified")
 		}
 
-		token := data.TokenNew(account.ID(), data.TokenTypeAccess)
+		token := data.TokenNew(account.ID, data.TokenTypeAccess)
 		tokenRaw := token.Raw()
 		token, err = token.Store()
 

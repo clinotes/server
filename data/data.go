@@ -21,30 +21,22 @@ package data
 import (
 	"math/rand"
 
-	"github.com/jackc/pgx"
+	"github.com/jmoiron/sqlx"
 )
 
 var (
-	pool    *pgx.ConnPool
+	db      *sqlx.DB
 	letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-
-	// Queries holds the list of all needed sql queries
-	Queries = []map[string]string{
-		AccountQueries,
-		TokenQueries,
-		SubscriptionQueries,
-		NoteQueries,
-	}
 )
 
-// Pool configures the PostgreSQL pool
-func Pool(use *pgx.ConnPool) {
-	pool = use
+// Database configures the db driver
+func Database(use *sqlx.DB) {
+	db = use
 }
 
 // Setup creates the database structure
-func Setup(pool *pgx.Conn) {
-	pool.Exec(`
+func Setup() {
+	db.Exec(`
 		CREATE TABLE account(
 	    id serial primary key,
 	    address TEXT NOT NULL,

@@ -30,39 +30,39 @@ func TestSubscription(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	sub := SubscriptionNew(user.ID(), "test")
+	sub := SubscriptionNew(user.ID, "test")
 
-	assert.Equal(t, 0, sub.ID())
-	assert.Equal(t, user.ID(), sub.Account())
-	assert.Equal(t, "test", sub.StripeID())
-	assert.False(t, sub.IsActive())
+	assert.Equal(t, 0, sub.ID)
+	assert.Equal(t, user.ID, sub.Account)
+	assert.Equal(t, "test", sub.StripeID)
+	assert.False(t, sub.Active)
 	assert.False(t, sub.IsStored())
 
 	sub, err = sub.Store()
 
 	if assert.Nil(t, err) {
-		assert.NotEqual(t, 0, sub.ID())
-		assert.False(t, sub.IsActive())
+		assert.NotEqual(t, 0, sub.ID)
+		assert.False(t, sub.Active)
 		assert.True(t, sub.IsStored())
 
 		sub, err = sub.Activate()
 		if assert.Nil(t, err) {
-			assert.True(t, sub.IsActive())
+			assert.True(t, sub.Active)
 		}
 
 		sub, err = sub.Activate()
 		if assert.Nil(t, err) {
-			assert.True(t, sub.IsActive())
+			assert.True(t, sub.Active)
 		}
 
 		sub, err = sub.Deactivate()
 		if assert.Nil(t, err) {
-			assert.False(t, sub.IsActive())
+			assert.False(t, sub.Active)
 		}
 
 		sub, err = sub.Deactivate()
 		if assert.Nil(t, err) {
-			assert.False(t, sub.IsActive())
+			assert.False(t, sub.Active)
 		}
 	}
 

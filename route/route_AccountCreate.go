@@ -47,7 +47,7 @@ var APIRouteAccountCreate = Route{
 			return nil, errors.New("Unable to create account")
 		}
 
-		token := data.TokenNew(account.ID(), data.TokenTypeMaintenace)
+		token := data.TokenNew(account.ID, data.TokenTypeMaintenace)
 		tokenRaw := token.Raw()
 		token, err = token.Store()
 
@@ -58,7 +58,7 @@ var APIRouteAccountCreate = Route{
 		}
 
 		// Send confirmation mail using Postmark
-		_, err = sendTokenWithTemplate(account.Address(), tokenRaw, conf.TemplateWelcome)
+		_, err = sendTokenWithTemplate(account.Address, tokenRaw, conf.TemplateWelcome)
 		if err != nil {
 			return nil, errors.New("Unable to send welcome mail")
 		}
