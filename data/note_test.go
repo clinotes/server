@@ -30,11 +30,11 @@ func TestNote(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	note := NoteNew(user.ID(), "example content")
+	note := NoteNew(user.ID, "example content")
 
 	assert.False(t, note.IsStored())
-	assert.Equal(t, "example content", note.Text())
-	assert.Equal(t, user.ID(), note.Account())
+	assert.Equal(t, "example content", note.Text)
+	assert.Equal(t, user.ID, note.Account)
 
 	note, err = note.Store()
 
@@ -51,10 +51,10 @@ func TestNoteLimit(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	note := NoteNew(user.ID(), "This is a note! This is a note! This is a note! This is a note! This is a note! This is a note! This is a note!")
+	note := NoteNew(user.ID, "This is a note! This is a note! This is a note! This is a note! This is a note! This is a note! This is a note!")
 
 	assert.False(t, note.IsStored())
-	assert.Equal(t, user.ID(), note.Account())
+	assert.Equal(t, user.ID, note.Account)
 
 	note, err = note.Store()
 
@@ -69,17 +69,17 @@ func TestNoteList(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	note := NoteNew(user.ID(), "This is a note!")
+	note := NoteNew(user.ID, "This is a note!")
 	note, err = note.Store()
 
 	assert.Nil(t, err)
 
-	note2 := NoteNew(user.ID(), "This is a second note!")
+	note2 := NoteNew(user.ID, "This is a second note!")
 	note2, err = note2.Store()
 
 	assert.Nil(t, err)
 
-	list, err := NoteListByAccount(user.ID())
+	list, err := NoteListByAccount(user.ID)
 
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(list))

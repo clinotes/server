@@ -30,10 +30,10 @@ func TestSubscription(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	sub := SubscriptionNew(user.ID(), "test")
+	sub := SubscriptionNew(user.ID, "test")
 
 	assert.Equal(t, 0, sub.ID)
-	assert.Equal(t, user.ID(), sub.Account)
+	assert.Equal(t, user.ID, sub.Account)
 	assert.Equal(t, "test", sub.StripeID)
 	assert.False(t, sub.Active)
 	assert.False(t, sub.IsStored())

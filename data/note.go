@@ -25,23 +25,19 @@ import (
 
 // NoteInterface defines Note
 type NoteInterface interface {
-	Account() int
-	CreatedOn() time.Time
-	ID() int
 	IsStored() bool
-	Store() (NoteInterface, error)
-	Text() string
+	Store() (*Note, error)
 
-	create() (NoteInterface, error)
-	update() (NoteInterface, error)
+	create() (*Note, error)
+	update() (*Note, error)
 }
 
 // Note implements NoteInterface
 type Note struct {
-	id      int
-	account int
-	text    string
-	created time.Time
+	ID      int       `db:"id"`
+	Account int       `db:"account"`
+	Text    string    `db:"text"`
+	Created time.Time `db:"created"`
 }
 
 // NoteQueries has all queries for Note
@@ -66,8 +62,8 @@ var NoteQueries = map[string]string{
 }
 
 // NoteNew creates a new Note
-func NoteNew(account int, text string) NoteInterface {
-	return Note{0, account, text, time.Now()}
+func NoteNew(account int, text string) *Note {
+	return &Note{0, account, text, time.Now()}
 }
 
 // NoteByID retrieves Note by id
@@ -80,34 +76,19 @@ func NoteListByAccount(account int) ([]Note, error) {
 	return noteListByFieldAndValue("noteListGetByAccount", account)
 }
 
-// Account retrieves Note account
-func (n Note) Account() int {
-	return n.account
-}
-
-// CreatedOn returns Note create date
-func (n Note) CreatedOn() time.Time {
-	return n.created
-}
-
-// ID returns Account id
-func (n Note) ID() int {
-	return n.id
-}
-
 // IsStored checks if Note is stored in DB
 func (n Note) IsStored() bool {
-	return n.ID() != 0
+	return n.ID != 0
 }
 
 // Refresh Note from DB
 func (n Note) Refresh() (*Note, error) {
-	return NoteByID(n.ID())
+	return NoteByID(n.ID)
 }
 
 // Store writes Notes to DB
-func (n Note) Store() (NoteInterface, error) {
-	if len(n.Text()) > 100 {
+func (n Note) Store() (*Note, error) {
+	if len(n.Text) > 100 {
 		return nil, errors.New("Note must not be longer than 100 characters")
 	}
 
@@ -118,14 +99,9 @@ func (n Note) Store() (NoteInterface, error) {
 	return n.create()
 }
 
-// Text returns Note text
-func (n Note) Text() string {
-	return n.text
-}
-
-func (n Note) create() (NoteInterface, error) {
+func (n Note) create() (*Note, error) {
 	var noteID int
-	err := pool.QueryRow("noteAdd", n.Account(), n.Text()).Scan(&noteID)
+	err := pool.QueryRow("noteAdd", n.Account, n.Text).Scan(&noteID)
 
 	if err == nil {
 		return NoteByID(noteID)
@@ -135,8 +111,8 @@ func (n Note) create() (NoteInterface, error) {
 
 }
 
-func (n Note) update() (NoteInterface, error) {
-	_, err := pool.Exec("noteUpdate", n.ID(), n.Text())
+func (n Note) update() (*Note, error) {
+	_, err := pool.Exec("noteUpdate", n.ID, n.Text)
 
 	if err == nil {
 		return n.Refresh()

@@ -25,30 +25,26 @@ import (
 
 // AccountInterface defines Account
 type AccountInterface interface {
-	Address() string
-	CreatedOn() time.Time
 	GetSubscription() *Subscription
 	GetToken(t string, tokenType int) (*Token, error)
 	GetTokenList(tokenType int) []*Token
 	HasSubscription() bool
-	ID() int
 	IsStored() bool
-	IsVerified() bool
 	Refresh() (*Account, error)
 	Remove() error
-	Store() (AccountInterface, error)
-	Verify() (AccountInterface, error)
+	Store() (*Account, error)
+	Verify() (*Account, error)
 
-	create() (AccountInterface, error)
-	update() (AccountInterface, error)
+	create() (*Account, error)
+	update() (*Account, error)
 }
 
 // Account implements AccountInterface
 type Account struct {
-	id       int
-	address  string
-	created  time.Time
-	verified bool
+	ID       int       `db:"id"`
+	Address  string    `db:"address"`
+	Created  time.Time `db:"created"`
+	Verified bool      `db:"verified"`
 }
 
 // AccountQueries has all queries for Account
@@ -73,28 +69,18 @@ var AccountQueries = map[string]string{
 }
 
 // AccountNew creates a new account
-func AccountNew(address string) AccountInterface {
+func AccountNew(address string) *Account {
 	return &Account{0, address, time.Now(), false}
 }
 
 // AccountByAddress retrieves Account by address
-func AccountByAddress(address string) (AccountInterface, error) {
+func AccountByAddress(address string) (*Account, error) {
 	return accountByFieldAndValue("accountGetByAddress", address)
 }
 
 // AccountByID retrieves Account by id
 func AccountByID(id int) (*Account, error) {
 	return accountByFieldAndValue("accountGetByID", id)
-}
-
-// Address returns Account address
-func (a Account) Address() string {
-	return a.address
-}
-
-// CreatedOn returns Account create date
-func (a Account) CreatedOn() time.Time {
-	return a.created
 }
 
 // GetToken retrieves Token for Account
@@ -118,12 +104,12 @@ func (a Account) GetToken(t string, tokenType int) (*Token, error) {
 
 // GetTokenList retrieves all Token for Account
 func (a Account) GetTokenList(tokenType int) []*Token {
-	return TokenListByAccountAndType(a.ID(), tokenType)
+	return TokenListByAccountAndType(a.ID, tokenType)
 }
 
 // GetSubscription retrieves Account Subscription
 func (a Account) GetSubscription() *Subscription {
-	sub, err := SubscriptionByAccountID(a.ID())
+	sub, err := SubscriptionByAccountID(a.ID)
 
 	if err == nil {
 		return sub
@@ -137,35 +123,25 @@ func (a Account) HasSubscription() bool {
 	return a.GetSubscription() != nil
 }
 
-// ID returns Account id
-func (a Account) ID() int {
-	return a.id
-}
-
 // IsStored checks if Account is stored in DB
 func (a Account) IsStored() bool {
-	return a.ID() != 0
-}
-
-// IsVerified checks if Account is verified
-func (a Account) IsVerified() bool {
-	return a.verified
+	return a.ID != 0
 }
 
 // Refresh Account from DB
 func (a Account) Refresh() (*Account, error) {
-	return AccountByID(a.ID())
+	return AccountByID(a.ID)
 }
 
 // Remove Account
 func (a Account) Remove() error {
-	_, err := pool.Exec("accountRemove", a.ID())
+	_, err := pool.Exec("accountRemove", a.ID)
 
 	return err
 }
 
 // Store writes Account to DB
-func (a Account) Store() (AccountInterface, error) {
+func (a Account) Store() (*Account, error) {
 	if a.IsStored() {
 		return a.update()
 	}
@@ -174,34 +150,34 @@ func (a Account) Store() (AccountInterface, error) {
 }
 
 // Verify verifies Account and updates the DB
-func (a Account) Verify() (AccountInterface, error) {
-	_, err := pool.Exec("accountUpdate", a.ID(), true)
+func (a Account) Verify() (*Account, error) {
+	_, err := pool.Exec("accountUpdate", a.ID, true)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return AccountByID(a.ID())
+	return AccountByID(a.ID)
 }
 
-func (a Account) create() (AccountInterface, error) {
-	_, err := pool.Exec("accountAdd", a.Address())
+func (a Account) create() (*Account, error) {
+	_, err := pool.Exec("accountAdd", a.Address)
 
 	if err == nil {
-		return AccountByAddress(a.Address())
+		return AccountByAddress(a.Address)
 	}
 
 	return nil, err
 }
 
-func (a Account) update() (AccountInterface, error) {
-	_, err := pool.Exec("accountUpdate", a.ID(), a.IsVerified())
+func (a Account) update() (*Account, error) {
+	_, err := pool.Exec("accountUpdate", a.ID, a.Verified)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return AccountByID(a.ID())
+	return AccountByID(a.ID)
 }
 
 func accountFromResult(result interface {
