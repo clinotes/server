@@ -37,7 +37,7 @@ func TestToken(t *testing.T) {
 	assert.Equal(t, token.ID, 0)
 	assert.Equal(t, token.Type(), TokenTypeMaintenace)
 	assert.NotNil(t, token.Text)
-	assert.True(t, token.IsActive())
+	assert.True(t, token.Active)
 
 	token, err = token.Store()
 
@@ -50,22 +50,22 @@ func TestToken(t *testing.T) {
 
 	token, err = token.Deactivate()
 	if assert.Nil(t, err) {
-		assert.False(t, token.IsActive())
+		assert.False(t, token.Active)
 	}
 
 	token, err = token.Deactivate()
 	if assert.Nil(t, err) {
-		assert.False(t, token.IsActive())
+		assert.False(t, token.Active)
 	}
 
 	token, err = token.Activate()
 	if assert.Nil(t, err) {
-		assert.True(t, token.IsActive())
+		assert.True(t, token.Active)
 	}
 
 	token, err = token.Activate()
 	if assert.Nil(t, err) {
-		assert.True(t, token.IsActive())
+		assert.True(t, token.Active)
 	}
 
 	token.Remove()

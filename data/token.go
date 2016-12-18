@@ -37,7 +37,6 @@ type TokenInterface interface {
 	Account() int
 	Activate() (Token, error)
 	Deactivate() (Token, error)
-	IsActive() bool
 	IsSecure() bool
 	Matches(raw string) bool
 	Raw() string
@@ -50,10 +49,10 @@ type TokenInterface interface {
 type Token struct {
 	ID        int `db:"id"`
 	account   int
-	Text      string `db:"text"`
-	Created   time.Time
+	Text      string    `db:"text"`
+	Created   time.Time `db:"created"`
 	tokenType int
-	active    bool
+	Active    bool `db:"active"`
 	raw       string
 }
 
@@ -124,27 +123,22 @@ func (t Token) Account() int {
 
 // Activate activates Token and updates the DB
 func (t Token) Activate() (*Token, error) {
-	if t.IsActive() {
+	if t.Active {
 		return &t, nil
 	}
 
-	t.active = true
+	t.Active = true
 	return t.Store()
 }
 
 // Deactivate activates Token and updates the DB
 func (t Token) Deactivate() (*Token, error) {
-	if !t.IsActive() {
+	if !t.Active {
 		return &t, nil
 	}
 
-	t.active = false
+	t.Active = false
 	return t.Store()
-}
-
-// IsActive checks if Token is active
-func (t Token) IsActive() bool {
-	return t.active
 }
 
 // IsSecure checks Token is secure
@@ -201,7 +195,7 @@ func (t Token) Type() int {
 
 func (t Token) create() (*Token, error) {
 	var tokenID int
-	err := pool.QueryRow("tokenAdd", t.Account(), t.Text, t.Type(), t.IsActive()).Scan(&tokenID)
+	err := pool.QueryRow("tokenAdd", t.Account(), t.Text, t.Type(), t.Active).Scan(&tokenID)
 
 	if err == nil {
 		return TokenByID(tokenID)
@@ -211,7 +205,7 @@ func (t Token) create() (*Token, error) {
 }
 
 func (t Token) update() (*Token, error) {
-	_, err := pool.Exec("tokenUpdate", t.ID, t.Text, t.IsActive())
+	_, err := pool.Exec("tokenUpdate", t.ID, t.Text, t.Active)
 
 	if err == nil {
 		return t.Refresh()
