@@ -42,18 +42,17 @@ type TokenInterface interface {
 	Raw() string
 	Remove() error
 	Store() (Token, error)
-	Type() int
 }
 
 // Token implements TokenInterface
 type Token struct {
-	ID        int `db:"id"`
-	account   int
-	Text      string    `db:"text"`
-	Created   time.Time `db:"created"`
-	tokenType int
-	Active    bool `db:"active"`
-	raw       string
+	ID      int `db:"id"`
+	account int
+	Text    string    `db:"text"`
+	Created time.Time `db:"created"`
+	Type    int
+	Active  bool `db:"active"`
+	raw     string
 }
 
 // TokenQueries has all queries for Token
@@ -188,14 +187,9 @@ func (t Token) Store() (*Token, error) {
 	return t.create()
 }
 
-// Type returns Token type
-func (t Token) Type() int {
-	return t.tokenType
-}
-
 func (t Token) create() (*Token, error) {
 	var tokenID int
-	err := pool.QueryRow("tokenAdd", t.Account(), t.Text, t.Type(), t.Active).Scan(&tokenID)
+	err := pool.QueryRow("tokenAdd", t.Account(), t.Text, t.Type, t.Active).Scan(&tokenID)
 
 	if err == nil {
 		return TokenByID(tokenID)
