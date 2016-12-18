@@ -45,7 +45,7 @@ func TestToken(t *testing.T) {
 		assert.Equal(t, "", token.Raw())
 		assert.True(t, token.IsSecure())
 		assert.NotEqual(t, 0, token.ID)
-		assert.NotEqual(t, 0, token.CreatedOn())
+		assert.NotEqual(t, 0, token.Created)
 	}
 
 	token, err = token.Deactivate()

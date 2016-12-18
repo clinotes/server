@@ -36,7 +36,6 @@ const (
 type TokenInterface interface {
 	Account() int
 	Activate() (Token, error)
-	CreatedOn() time.Time
 	Deactivate() (Token, error)
 	IsActive() bool
 	IsSecure() bool
@@ -52,7 +51,7 @@ type Token struct {
 	ID        int `db:"id"`
 	account   int
 	Text      string `db:"text"`
-	created   time.Time
+	Created   time.Time
 	tokenType int
 	active    bool
 	raw       string
@@ -131,11 +130,6 @@ func (t Token) Activate() (*Token, error) {
 
 	t.active = true
 	return t.Store()
-}
-
-// CreatedOn returns Token create date
-func (t Token) CreatedOn() time.Time {
-	return t.created
 }
 
 // Deactivate activates Token and updates the DB
