@@ -44,15 +44,14 @@ type TokenInterface interface {
 	Raw() string
 	Remove() error
 	Store() (Token, error)
-	Text() string
 	Type() int
 }
 
 // Token implements TokenInterface
 type Token struct {
-	ID        int
+	ID        int `db:"id"`
 	account   int
-	text      string
+	Text      string `db:"text"`
 	created   time.Time
 	tokenType int
 	active    bool
@@ -166,7 +165,7 @@ func (t Token) IsStored() bool {
 
 // Matches checks if text matches Token
 func (t Token) Matches(raw string) bool {
-	_, err := passlib.Verify(raw, t.Text())
+	_, err := passlib.Verify(raw, t.Text)
 
 	if err == nil {
 		return true
@@ -201,11 +200,6 @@ func (t Token) Store() (*Token, error) {
 	return t.create()
 }
 
-// Text returns Token text
-func (t Token) Text() string {
-	return t.text
-}
-
 // Type returns Token type
 func (t Token) Type() int {
 	return t.tokenType
@@ -213,7 +207,7 @@ func (t Token) Type() int {
 
 func (t Token) create() (*Token, error) {
 	var tokenID int
-	err := pool.QueryRow("tokenAdd", t.Account(), t.Text(), t.Type(), t.IsActive()).Scan(&tokenID)
+	err := pool.QueryRow("tokenAdd", t.Account(), t.Text, t.Type(), t.IsActive()).Scan(&tokenID)
 
 	if err == nil {
 		return TokenByID(tokenID)
@@ -223,7 +217,7 @@ func (t Token) create() (*Token, error) {
 }
 
 func (t Token) update() (*Token, error) {
-	_, err := pool.Exec("tokenUpdate", t.ID, t.Text(), t.IsActive())
+	_, err := pool.Exec("tokenUpdate", t.ID, t.Text, t.IsActive())
 
 	if err == nil {
 		return t.Refresh()

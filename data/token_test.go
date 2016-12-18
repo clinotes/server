@@ -36,7 +36,7 @@ func TestToken(t *testing.T) {
 	assert.False(t, token.Matches("test"+token.Raw()))
 	assert.Equal(t, token.ID, 0)
 	assert.Equal(t, token.Type(), TokenTypeMaintenace)
-	assert.NotNil(t, token.Text())
+	assert.NotNil(t, token.Text)
 	assert.True(t, token.IsActive())
 
 	token, err = token.Store()
